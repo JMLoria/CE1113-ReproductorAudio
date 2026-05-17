@@ -18,10 +18,10 @@ El proyecto consiste en el co-diseño hardware/software de un SoC avanzado para 
 
 | Código | Rol | Responsable | Responsabilidades |
 | :--- | :--- | :--- | :--- |
-| R_SoC | Hardware SoC |  | Diseño en Platform Designer, configuración del HPS, integración del bus Avalon y control de displays 7-seg. |
-| R_DSP | Hardware DSP |  | Diseño de los 3 filtros digitales en RTL (VHDL/Verilog), gestión del IP de Audio y aceleración de hardware. |
-| R_Level | Software Low-Level |  | Desarrollo del driver de la SD (SPI/SDIO), sistema de archivos Bare Metal y parseo de metadatos WAV. |
-| R_Control | Software de Control |  | Gestión de interrupciones, lógica de la máquina de estados de reproducción, control temporal y coordinación de UI. |
+| R_SoC | Hardware SoC | Jose Solano  | Diseño en Platform Designer, configuración del HPS, integración del bus Avalon y control de displays 7-seg. |
+| R_DSP | Hardware DSP | Noemi Vargas | Diseño de los 3 filtros digitales en RTL (VHDL/Verilog), gestión del IP de Audio y aceleración de hardware. |
+| R_Level | Software Low-Level | Roy Chavarria | Desarrollo del driver de la SD (SPI/SDIO), sistema de archivos Bare Metal y parseo de metadatos WAV. |
+| R_Control | Software de Control | Jose Loria | Gestión de interrupciones, lógica de la máquina de estados de reproducción, control temporal y coordinación de UI. |
 
 ## 4. Matriz de Requerimientos
 
