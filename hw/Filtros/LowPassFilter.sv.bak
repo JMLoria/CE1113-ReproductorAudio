@@ -1,0 +1,35 @@
+module lowpass_iir (
+    input  logic        clk,
+    input  logic        reset,
+    input  logic        sample_valid,
+    input  logic signed [15:0] sample_in,
+    output logic signed [15:0] low_out      // este es el "low" que los otros necesitan
+);
+
+    // Usamos 32 bits internamente para evitar desbordamiento
+    // al hacer la suma/resta antes de truncar a 16 bits
+    logic signed [31:0] low_prev;
+    logic signed [31:0] sample_ext;    // sample_in extendido a 32 bits
+    logic signed [31:0] diferencia;
+    logic signed [31:0] ajuste;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            low_prev <= 32'd0;
+        end else if (sample_valid) begin
+        
+            // Extender sample_in de 16 a 32 bits manteniendo el signo
+            sample_ext = {{16{sample_in[15]}}, sample_in};
+            
+            // low[n] = low[n-1] + (x[n] - low[n-1]) >> 3
+            diferencia = sample_ext - low_prev;
+            ajuste     = diferencia >>> 3;       // a = 1/8
+            low_prev  <= low_prev + ajuste;
+            
+        end
+    end
+
+    // Sacar solo los 16 bits que importan
+    assign low_out = low_prev[15:0];
+
+endmodule
