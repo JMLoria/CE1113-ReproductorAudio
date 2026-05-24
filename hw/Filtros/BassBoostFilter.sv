@@ -12,7 +12,7 @@ module BassBoostFilter (
     always_comb begin
 
         // Fórmula para el filtro
-        bassBoost_out = {{16{sample_in[15]}}, sample_in} + (low_in >>> 1); // x[n] - k * low[n] (donde k es 1/2 como valor inicial))
+        bassBoost_out = {{16{sample_in[15]}}, sample_in} + (low_in >>> 1); // x[n] + k * low[n] (donde k es 1/2 como valor inicial))
     end
 
 endmodule

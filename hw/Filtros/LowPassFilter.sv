@@ -17,9 +17,9 @@ module LowPassFilter (
     always_comb begin
         // >>> es desplazamiento aritmético, conserva el signo
         sample_ext = {{16{sample_in[15]}}, sample_in}; // Extiende sample_in a 32 bits con signo
-        diferencia = sample_ext - low_prev; // (x[n] - low[n-1])
-        ajuste     = diference >>> 3; // (x[n] - low[n-1]) / 8
-        low_next   = low_prev + ajuste; // low[n-1] + (x[n] - low[n-1]) / 8
+        diference = sample_ext - low_prev; // (x[n] - low[n-1])
+        adjust     = diference >>> 3; // (x[n] - low[n-1]) / 8
+        low_next   = low_prev + adjust; // low[n-1] + (x[n] - low[n-1]) / 8
     end
 
     always_ff @(posedge clk) begin
