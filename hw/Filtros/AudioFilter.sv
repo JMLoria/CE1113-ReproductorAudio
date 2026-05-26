@@ -65,10 +65,17 @@ module AudioFilter(
         else if (selected_filter > 32'sd32767) // Que no sobrepase el máximo
             sample_out = 16'sd32767;
         else if (selected_filter < -32'sd32768) // Que no sobrepase el mínimo
-            sample_out = -16'sd32768;
+            sample_out = 16'sh8000; // -32768
         else
             sample_out = selected_filter[15:0];
     end
+	 
+	 always @(posedge clk) begin
+		 if (sample_valid && filter_sel == 2'b11) begin
+			  $display("DEBUG BASS | sample_in=%0d | low=%0d | bass=%0d | selected=%0d | out=%0d",
+						  sample_in, low, bass, selected_filter, sample_out);
+		 end
+end
 
     assign sample_out_valid = sample_valid;
 

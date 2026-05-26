@@ -1,0 +1,224 @@
+# Reading C:/intelFPGA_lite/18.1/modelsim_ase/tcl/vsim/pref.tcl
+# do audio_filtros_run_msim_rtl_verilog.do
+# if {[file exists rtl_work]} {
+# 	vdel -lib rtl_work -all
+# }
+# vlib rtl_work
+# vmap work rtl_work
+# Model Technology ModelSim - Intel FPGA Edition vmap 10.5b Lib Mapping Utility 2016.10 Oct  5 2016
+# vmap work rtl_work 
+# Copying C:/intelFPGA_lite/18.1/modelsim_ase/win32aloem/../modelsim.ini to modelsim.ini
+# Modifying modelsim.ini
+# 
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/LowPassFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:18 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/LowPassFilter.sv 
+# -- Compiling module LowPassFilter
+# 
+# Top level modules:
+# 	LowPassFilter
+# End time: 21:13:18 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/HighPassFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:18 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/HighPassFilter.sv 
+# -- Compiling module HighPassFilter
+# 
+# Top level modules:
+# 	HighPassFilter
+# End time: 21:13:18 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/ByPassFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:19 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/ByPassFilter.sv 
+# -- Compiling module ByPassFilter
+# 
+# Top level modules:
+# 	ByPassFilter
+# End time: 21:13:19 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/BassBoostFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:19 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/BassBoostFilter.sv 
+# -- Compiling module BassBoostFilter
+# 
+# Top level modules:
+# 	BassBoostFilter
+# End time: 21:13:19 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/AudioFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:19 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/AudioFilter.sv 
+# -- Compiling module AudioFilter
+# 
+# Top level modules:
+# 	AudioFilter
+# End time: 21:13:19 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# 
+# vlog -sv -work work +incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros {C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/tb_AudioFilter.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 21:13:19 on May 25,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros" C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/tb_AudioFilter.sv 
+# -- Compiling module tb_AudioFilter
+# 
+# Top level modules:
+# 	tb_AudioFilter
+# End time: 21:13:19 on May 25,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# 
+# vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cyclonev_ver -L cyclonev_hssi_ver -L cyclonev_pcie_hip_ver -L rtl_work -L work -voptargs="+acc"  tb_AudioFilter
+# vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cyclonev_ver -L cyclonev_hssi_ver -L cyclonev_pcie_hip_ver -L rtl_work -L work -voptargs=""+acc"" tb_AudioFilter 
+# Start time: 21:13:21 on May 25,2026
+# Loading sv_std.std
+# Loading work.tb_AudioFilter
+# Loading work.AudioFilter
+# Loading work.LowPassFilter
+# Loading work.HighPassFilter
+# Loading work.BassBoostFilter
+# Loading work.ByPassFilter
+# 
+# add wave *
+# view structure
+# .main_pane.structure.interior.cs.body.struct
+# view signals
+# .main_pane.objects.interior.cs.body.tree
+# run -all
+# 
+# === PRUEBA 1: Bypass — esperado out == in ===
+#   filter_sel=00 | sample_in=   1000 | sample_out=   1000 | valid=1
+#     [PASS] out=1000 == esperado=1000
+#   filter_sel=00 | sample_in=   2000 | sample_out=   2000 | valid=1
+#     [PASS] out=2000 == esperado=2000
+#   filter_sel=00 | sample_in=  -1000 | sample_out=  -1000 | valid=1
+#     [PASS] out=-1000 == esperado=-1000
+#   filter_sel=00 | sample_in=  -2000 | sample_out=  -2000 | valid=1
+#     [PASS] out=-2000 == esperado=-2000
+#   filter_sel=00 | sample_in=      0 | sample_out=      0 | valid=1
+#     [PASS] out=0 == esperado=0
+# 
+# === PRUEBA 2: Lowpass escalon 0->8000 (debe subir hacia 8000) ===
+#   filter_sel=01 | sample_in=   8000 | sample_out=   1000 | valid=1
+#     [PASS] out=1000 == esperado=1000
+#   filter_sel=01 | sample_in=   8000 | sample_out=   1875 | valid=1
+#     [PASS] out=1875 == esperado=1875
+#   filter_sel=01 | sample_in=   8000 | sample_out=   2640 | valid=1
+#     [PASS] out=2640 == esperado=2640
+#   filter_sel=01 | sample_in=   8000 | sample_out=   3310 | valid=1
+#     [PASS] out=3310 == esperado=3310
+#   filter_sel=01 | sample_in=   8000 | sample_out=   3896 | valid=1
+#     [PASS] out=3896 == esperado=3896
+#   filter_sel=01 | sample_in=   8000 | sample_out=   4409 | valid=1
+#     [PASS] out=4409 == esperado=4409
+#   filter_sel=01 | sample_in=   8000 | sample_out=   4857 | valid=1
+#     [PASS] out=4857 == esperado=4857
+#   filter_sel=01 | sample_in=   8000 | sample_out=   5249 | valid=1
+#     [PASS] out=5249 == esperado=5249
+#   filter_sel=01 | sample_in=   8000 | sample_out=   5592 | valid=1
+#     [PASS] out=5592 == esperado=5592
+#   filter_sel=01 | sample_in=   8000 | sample_out=   5893 | valid=1
+#     [PASS] out=5893 == esperado=5893
+# 
+# === PRUEBA 3: Highpass +-8000 (debe oscilar cerca de +-8000) ===
+#   filter_sel=10 | sample_in=   8000 | sample_out=   7000 | valid=1
+#     [PASS] out=7000 == esperado=7000
+#   filter_sel=10 | sample_in=  -8000 | sample_out=  -7875 | valid=1
+#     [PASS] out=-7875 == esperado=-7875
+#   filter_sel=10 | sample_in=   8000 | sample_out=   7110 | valid=1
+#     [PASS] out=7110 == esperado=7110
+#   filter_sel=10 | sample_in=  -8000 | sample_out=  -7778 | valid=1
+#     [PASS] out=-7778 == esperado=-7778
+#   filter_sel=10 | sample_in=   8000 | sample_out=   7195 | valid=1
+#     [PASS] out=7195 == esperado=7195
+#   filter_sel=10 | sample_in=  -8000 | sample_out=  -7704 | valid=1
+#     [PASS] out=-7704 == esperado=-7704
+# 
+# === PRUEBA 4: Bass Boost constante 4000 (debe superar 4000 y subir) ===
+# DEBUG BASS | sample_in=4000 | low=0 | bass=4000 | selected=4000 | out=4000
+#   filter_sel=11 | sample_in=   4000 | sample_out=   4250 | valid=1
+#     [PASS] out=4250 == esperado=4250
+# DEBUG BASS | sample_in=4000 | low=500 | bass=4250 | selected=4250 | out=4250
+#   filter_sel=11 | sample_in=   4000 | sample_out=   4468 | valid=1
+#     [PASS] out=4468 == esperado=4468
+# DEBUG BASS | sample_in=4000 | low=937 | bass=4468 | selected=4468 | out=4468
+#   filter_sel=11 | sample_in=   4000 | sample_out=   4659 | valid=1
+#     [PASS] out=4659 == esperado=4659
+# DEBUG BASS | sample_in=4000 | low=1319 | bass=4659 | selected=4659 | out=4659
+#   filter_sel=11 | sample_in=   4000 | sample_out=   4827 | valid=1
+#     [PASS] out=4827 == esperado=4827
+# DEBUG BASS | sample_in=4000 | low=1654 | bass=4827 | selected=4827 | out=4827
+#   filter_sel=11 | sample_in=   4000 | sample_out=   4973 | valid=1
+#     [PASS] out=4973 == esperado=4973
+# DEBUG BASS | sample_in=4000 | low=1947 | bass=4973 | selected=4973 | out=4973
+#   filter_sel=11 | sample_in=   4000 | sample_out=   5101 | valid=1
+#     [PASS] out=5101 == esperado=5101
+# 
+# === PRUEBA 5: Saturacion positiva (32767) — warm-up 1, verif. 3 ===
+# DEBUG BASS | sample_in=30000 | low=0 | bass=30000 | selected=30000 | out=30000
+#   filter_sel=11 | sample_in=  30000 | sample_out=  31875 | valid=1
+#     [WARM-UP 1] out=31875
+# DEBUG BASS | sample_in=30000 | low=3750 | bass=31875 | selected=31875 | out=31875
+#   filter_sel=11 | sample_in=  30000 | sample_out=  32767 | valid=1
+#     [PASS] Saturacion correcta: 32767
+# DEBUG BASS | sample_in=30000 | low=7031 | bass=33515 | selected=33515 | out=32767
+#   filter_sel=11 | sample_in=  30000 | sample_out=  32767 | valid=1
+#     [PASS] Saturacion correcta: 32767
+# DEBUG BASS | sample_in=30000 | low=9902 | bass=34951 | selected=34951 | out=32767
+#   filter_sel=11 | sample_in=  30000 | sample_out=  32767 | valid=1
+#     [PASS] Saturacion correcta: 32767
+# 
+# === PRUEBA 6: Saturacion negativa (-32768) — warm-up 1, verif. 3 ===
+# DEBUG BASS | sample_in=-30000 | low=0 | bass=-30000 | selected=-30000 | out=-30000
+#   filter_sel=11 | sample_in= -30000 | sample_out= -31875 | valid=1
+#     [WARM-UP 1] out=-31875
+# DEBUG BASS | sample_in=-30000 | low=-3750 | bass=-31875 | selected=-31875 | out=-31875
+#   filter_sel=11 | sample_in= -30000 | sample_out= -32768 | valid=1
+#     [PASS] Saturacion correcta: -32768
+# DEBUG BASS | sample_in=-30000 | low=-7032 | bass=-33516 | selected=-33516 | out=-32768
+#   filter_sel=11 | sample_in= -30000 | sample_out= -32768 | valid=1
+#     [PASS] Saturacion correcta: -32768
+# DEBUG BASS | sample_in=-30000 | low=-9903 | bass=-34952 | selected=-34952 | out=-32768
+#   filter_sel=11 | sample_in= -30000 | sample_out= -32768 | valid=1
+#     [PASS] Saturacion correcta: -32768
+# 
+# === PRUEBA 7: Lowpass escalon 0->-8000 (debe bajar hacia -8000) ===
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -1000 | valid=1
+#     [PASS] out=-1000 == esperado=-1000
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -1875 | valid=1
+#     [PASS] out=-1875 == esperado=-1875
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -2641 | valid=1
+#     [PASS] out=-2641 == esperado=-2641
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -3311 | valid=1
+#     [PASS] out=-3311 == esperado=-3311
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -3898 | valid=1
+#     [PASS] out=-3898 == esperado=-3898
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -4411 | valid=1
+#     [PASS] out=-4411 == esperado=-4411
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -4860 | valid=1
+#     [PASS] out=-4860 == esperado=-4860
+#   filter_sel=01 | sample_in=  -8000 | sample_out=  -5253 | valid=1
+#     [PASS] out=-5253 == esperado=-5253
+# 
+# === PRUEBA 8: Cambio de filtro en caliente ===
+#   filter_sel=01 | sample_in=   4000 | sample_out=    500 | valid=1
+#   filter_sel=01 | sample_in=   4000 | sample_out=    937 | valid=1
+#   (cambiando a Bypass)
+#   filter_sel=00 | sample_in=   1234 | sample_out=   1234 | valid=1
+#     [PASS] out=1234 == esperado=1234
+#   filter_sel=00 | sample_in=  -5678 | sample_out=  -5678 | valid=1
+#     [PASS] out=-5678 == esperado=-5678
+# 
+# ================================================
+#   RESUMEN: 43 PASS | 0 FAIL | 43 TOTAL
+# ================================================
+# 
+# ** Note: $stop    : C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/tb_AudioFilter.sv(293)
+#    Time: 1860 ns  Iteration: 0  Instance: /tb_AudioFilter
+# Break in Module tb_AudioFilter at C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Filtros/tb_AudioFilter.sv line 293
+# End time: 21:28:53 on May 25,2026, Elapsed time: 0:15:32
+# Errors: 0, Warnings: 0

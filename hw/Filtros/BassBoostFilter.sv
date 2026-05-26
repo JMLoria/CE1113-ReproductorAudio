@@ -9,10 +9,23 @@ module BassBoostFilter (
 
 );
 
+	 logic signed [31:0] sample_ext;
+    logic signed [31:0] low_half;
+
     always_comb begin
 
+        
+		  
+        // Extender sample_in de 16 a 32 bits manteniendo el signo
+        sample_ext = {{16{sample_in[15]}}, sample_in};
+
+        // Dividir low_in entre 2 manteniendo el signo
+        low_half = low_in >>> 1;
+
         // Fórmula para el filtro
-        bassBoost_out = {{16{sample_in[15]}}, sample_in} + (low_in >>> 1); // x[n] + k * low[n] (donde k es 1/2 como valor inicial))
+        bassBoost_out = sample_ext + low_half;
+		  
     end
 
 endmodule
+
