@@ -141,9 +141,9 @@ module Proyecto_II(
 //  Structural coding
 //=======================================================
 
-//-----------------------------------------------------
-// Instanciación del soc_system (HPS + lógica FPGA)
-//-----------------------------------------------------
+//=======================================================
+//  Instanciación del soc_system (HPS + NIOS II + periféricos)
+//=======================================================
 soc_system u0 (
     // Clock
     .clk_clk                         (CLOCK_50),
@@ -191,24 +191,29 @@ soc_system u0 (
     .hps_io_hps_io_sdio_inst_D3      (HPS_SD_DATA[3]),
     
     // HPS SPI (SPIM1 - header LTC)
-    .hps_io_hps_io_spim1_inst_SS1    (),                  // sin conexión externa
+    .hps_io_hps_io_spim1_inst_SS1    (),
     .hps_io_hps_io_spim1_inst_CLK    (HPS_SPIM_CLK),
     .hps_io_hps_io_spim1_inst_MOSI   (HPS_SPIM_MOSI),
     .hps_io_hps_io_spim1_inst_MISO   (HPS_SPIM_MISO),
     .hps_io_hps_io_spim1_inst_SS0    (HPS_SPIM_SS),
     
-    // HPS UART (puerto serial para debug)
+    // HPS UART (debug por USB-to-UART)
     .hps_io_hps_io_uart0_inst_RX     (HPS_UART_RX),
     .hps_io_hps_io_uart0_inst_TX     (HPS_UART_TX),
     
-    // HPS I2C (ojo con el mapeo de nombres)
+    // HPS I2C
     .hps_io_hps_io_i2c0_inst_SDA     (HPS_I2C1_SDAT),
     .hps_io_hps_io_i2c0_inst_SCL     (HPS_I2C1_SCLK),
     .hps_io_hps_io_i2c1_inst_SDA     (HPS_I2C2_SDAT),
     .hps_io_hps_io_i2c1_inst_SCL     (HPS_I2C2_SCLK),
     
     // HPS GPIO
-    .hps_io_hps_io_gpio_inst_GPIO01  (HPS_GPIO[1])
+    .hps_io_hps_io_gpio_inst_GPIO01  (HPS_GPIO[1]),
+    
+    // PIOs desde NIOS II (NUEVOS)
+    .buttons_export                  (KEY),
+    .switches_export                 (SW),
+    .leds_export                     (LEDR)
 );
 
 endmodule
