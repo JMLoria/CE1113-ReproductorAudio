@@ -53,3 +53,29 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+
+# Quartus / Intel FPGA generated files
+**/db/
+**/incremental_db/
+**/output_files/
+**/greybox_tmp/
+**/simulation/
+**/questa/
+**/modelsim/
+
+*.qws
+*.rpt
+*.summary
+*.smsg
+*.done
+*.jdi
+*.pin
+*.sof
+*.pof
+*.jic
+*.rbf
+*.bak
+*.orig
+*.tmp
+*.flock
