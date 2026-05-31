@@ -3,9 +3,8 @@
  *
  * Mapa de memoria del sistema NIOS II para el reproductor de audio.
  *
- * REQ-16: acceso por punteros directos, sin uso de HAL.
+ * Acceso por punteros directos, sin uso de HAL.
  *
- * Última actualización: 2026-05-30
  */
 
 #ifndef MEMORY_MAP_H
@@ -25,6 +24,7 @@
 #define BUTTONS_PIO_BASE      0x00050000U
 #define SWITCHES_PIO_BASE     0x00051000U
 #define LEDS_PIO_BASE         0x00052000U
+#define HEX_DISPLAY_BASE      0x00060000U   /* módulo personalizado */
 
 /* ==========================================================
  * IRQs del NIOS II
@@ -33,6 +33,26 @@
 #define IRQ_JTAG_UART         1
 #define IRQ_TIMER             2
 #define IRQ_BUTTONS           3
+
+/* ==========================================================
+ * HEX Display Controller (REQ-04, REQ-10)
+ *
+ * Módulo personalizado que controla los 6 displays de 7-seg.
+ * Diseñado por R_SoC.
+ * ========================================================== */
+
+/* Offsets de registros */
+#define HEX_CONTROL_OFFSET    0x00
+#define HEX_STATUS_OFFSET     0x04
+#define HEX_DATA_OFFSET       0x08
+
+/* Bits del registro CONTROL */
+#define HEX_CTRL_ENABLE       (1 << 0)
+#define HEX_CTRL_MODE_TIME    (0 << 1)   /* mostrar MM:SS */
+#define HEX_CTRL_MODE_HEX     (1 << 1)   /* mostrar número hex */
+
+/* Bits del registro STATUS */
+#define HEX_STATUS_READY      (1 << 0)
 
 /* ==========================================================
  * Offsets de registros - PIOs (Parallel I/O)
@@ -68,8 +88,11 @@
  * Macros para acceso a registros (REG_READ / REG_WRITE)
  *
  * Uso:
+ *   REG_WRITE(HEX_DISPLAY_BASE, HEX_CONTROL_OFFSET, HEX_CTRL_ENABLE);
+ *   REG_WRITE(HEX_DISPLAY_BASE, HEX_DATA_OFFSET, 125);  // mostrar 02:05
+ *
  *   REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0xFF);
- *   uint32_t v = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET);
+ *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET);
  * ========================================================== */
 
 #define REG_WRITE(base, offset, value) \

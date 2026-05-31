@@ -210,10 +210,18 @@ soc_system u0 (
     // HPS GPIO
     .hps_io_hps_io_gpio_inst_GPIO01  (HPS_GPIO[1]),
     
-    // PIOs desde NIOS II (NUEVOS)
+    // PIOs desde NIOS II
     .buttons_export                  (KEY),
     .switches_export                 (SW),
-    .leds_export                     (LEDR)
+    .leds_export                     (LEDR),
+	 
+	 // HEX Display Controller
+    .hex_hex0                        (HEX0),
+    .hex_hex1                        (HEX1),
+    .hex_hex2                        (HEX2),
+    .hex_hex3                        (HEX3),
+    .hex_hex4                        (HEX4),
+    .hex_hex5                        (HEX5)
 );
 
 endmodule

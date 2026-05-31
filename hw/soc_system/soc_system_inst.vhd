@@ -51,7 +51,13 @@
 			memory_mem_odt                  : out   std_logic;                                        -- mem_odt
 			memory_mem_dm                   : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			memory_oct_rzqin                : in    std_logic                     := 'X';             -- oct_rzqin
-			switches_export                 : in    std_logic_vector(9 downto 0)  := (others => 'X')  -- export
+			switches_export                 : in    std_logic_vector(9 downto 0)  := (others => 'X'); -- export
+			hex_hex0                        : out   std_logic_vector(6 downto 0);                     -- hex0
+			hex_hex1                        : out   std_logic_vector(6 downto 0);                     -- hex1
+			hex_hex2                        : out   std_logic_vector(6 downto 0);                     -- hex2
+			hex_hex3                        : out   std_logic_vector(6 downto 0);                     -- hex3
+			hex_hex4                        : out   std_logic_vector(6 downto 0);                     -- hex4
+			hex_hex5                        : out   std_logic_vector(6 downto 0)                      -- hex5
 		);
 	end component soc_system;
 
@@ -108,6 +114,12 @@
 			memory_mem_odt                  => CONNECTED_TO_memory_mem_odt,                  --         .mem_odt
 			memory_mem_dm                   => CONNECTED_TO_memory_mem_dm,                   --         .mem_dm
 			memory_oct_rzqin                => CONNECTED_TO_memory_oct_rzqin,                --         .oct_rzqin
-			switches_export                 => CONNECTED_TO_switches_export                  -- switches.export
+			switches_export                 => CONNECTED_TO_switches_export,                 -- switches.export
+			hex_hex0                        => CONNECTED_TO_hex_hex0,                        --      hex.hex0
+			hex_hex1                        => CONNECTED_TO_hex_hex1,                        --         .hex1
+			hex_hex2                        => CONNECTED_TO_hex_hex2,                        --         .hex2
+			hex_hex3                        => CONNECTED_TO_hex_hex3,                        --         .hex3
+			hex_hex4                        => CONNECTED_TO_hex_hex4,                        --         .hex4
+			hex_hex5                        => CONNECTED_TO_hex_hex5                         --         .hex5
 		);
 
