@@ -1,0 +1,30 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Prueba-Audio/simulation/modelsim
+vpll_audio
+!s110 1780204535
+!i10b 1
+!s100 dWI4HdH<Vig65EYDlI5O00
+I0GnKzQniL>;4256IOiAlI1
+VDg1SIo80bB@j0V0VzS_@n1
+R0
+w1779926994
+8C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Prueba-Audio/pll_audio_sim/pll_audio.vo
+FC:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Prueba-Audio/pll_audio_sim/pll_audio.vo
+L0 31
+OV;L;10.5b;63
+r1
+!s85 0
+31
+!s108 1780204534.000000
+!s107 C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Prueba-Audio/pll_audio_sim/pll_audio.vo|
+!s90 -reportprogress|300|C:/intelFPGA_lite/P2-Empotrados/CE1113-ReproductorAudio/hw/Prueba-Audio/pll_audio_sim/pll_audio.vo|
+!i113 1
+tCvgOpt 0

@@ -1,0 +1,32 @@
+#include "system.h"
+#include "io.h"
+#include "altera_avalon_jtag_uart_regs.h"
+
+void jtag_putchar(char c)
+{
+    while ((IORD_ALTERA_AVALON_JTAG_UART_CONTROL(JTAG_UART_BASE) &
+            ALTERA_AVALON_JTAG_UART_CONTROL_WSPACE_MSK) == 0) {
+        // Espera espacio en el FIFO de escritura
+    }
+
+    IOWR_ALTERA_AVALON_JTAG_UART_DATA(JTAG_UART_BASE, c);
+}
+
+void jtag_print(const char *s)
+{
+    while (*s) {
+        jtag_putchar(*s++);
+    }
+}
+
+int main(void)
+{
+    while (1) {
+        jtag_print("JTAG UART directo funciona\n");
+
+        volatile int i;
+        for (i = 0; i < 5000000; i++);
+    }
+
+    return 0;
+}

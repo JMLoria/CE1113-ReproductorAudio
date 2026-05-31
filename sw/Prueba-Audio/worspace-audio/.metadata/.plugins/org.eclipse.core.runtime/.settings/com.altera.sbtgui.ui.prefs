@@ -1,0 +1,4 @@
+eclipse.preferences.version=1
+newSoftwareExampleWizardPage.defaultLocation=C\:\\intelFPGA_lite\\P2-Empotrados\\CE1113-ReproductorAudio\\hw\\Prueba-Audio\\software\\Audio_Test
+newSoftwareExampleWizardPage.sopcinfoFile=C\:\\intelFPGA_lite\\P2-Empotrados\\CE1113-ReproductorAudio\\hw\\Prueba-Audio\\soc_system.sopcinfo
+newSoftwareExampleWizardPage2.newBspLocation=C\:\\intelFPGA_lite\\P2-Empotrados\\CE1113-ReproductorAudio\\hw\\Prueba-Audio\\software\\Audio_Test_bsp

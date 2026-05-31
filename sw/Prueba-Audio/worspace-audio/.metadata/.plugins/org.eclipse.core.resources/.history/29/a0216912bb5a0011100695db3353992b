@@ -1,0 +1,33 @@
+#include "system.h"
+#include "sys/alt_stdio.h"
+#include "altera_up_avalon_audio_and_video_config.h"
+
+int main(void)
+{
+    alt_putstr("Iniciando Nios II...\n");
+    alt_putstr("Configurando WM8731...\n");
+
+    alt_up_av_config_dev *audio_config;
+
+    audio_config = alt_up_av_config_open_dev(AUDIO_CONFIG_EXTERNAL_NAME);
+
+    if (audio_config == NULL) {
+        alt_putstr("ERROR: No se pudo abrir AUDIO_CONFIG_EXTERNAL\n");
+        while (1);
+    }
+
+    alt_up_av_config_reset(audio_config);
+
+    while (!alt_up_av_config_read_ready(audio_config)) {
+        // Espera mientras termina la configuracion por I2C
+    }
+
+    alt_putstr("WM8731 configurado correctamente.\n");
+
+    while (1) {
+        // El Nios queda corriendo.
+        // El tono lo genera tu ToneGenerator en hardware.
+    }
+
+    return 0;
+}

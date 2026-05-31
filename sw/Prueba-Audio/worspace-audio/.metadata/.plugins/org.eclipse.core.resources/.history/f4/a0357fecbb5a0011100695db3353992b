@@ -1,0 +1,14 @@
+#include "system.h"
+#include "sys/alt_stdio.h"
+
+int main(void)
+{
+    while (1) {
+        alt_putstr("Nios vivo\n");
+
+        volatile int i;
+        for (i = 0; i < 5000000; i++);
+    }
+
+    return 0;
+}
