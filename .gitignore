@@ -53,3 +53,33 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# ==========================================
+# Intel Quartus & Platform Designer Outputs
+# ==========================================
+# Carpetas de base de datos de síntesis e incremental
+db/
+incremental_db/
+/hw/db/
+/hw/incremental_db/
+
+# Reportes y logs de compilación
+*.rpt
+*.summary
+*.smsg
+*.txt
+*.done
+*.jdi
+*.pin
+*.qws
+
+# Archivos de bitstream finales (se generan localmente)
+*.sof
+*.pof
+*.ttf
+
+# Archivos temporales de Platform Designer
+.qsys_edit/
+*.modules
+*.csv
+*.spd
