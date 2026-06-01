@@ -83,3 +83,22 @@ incremental_db/
 *.modules
 *.csv
 *.spd
+
+# ==========================================
+# Nios II Software Build Tools (Eclipse / BSP)
+# ==========================================
+# Archivos de configuración del Workspace de Eclipse
+.metadata/
+RemoteSystemsTempFiles/
+.recommenders/
+
+# Archivos temporales y de configuración local del proyecto
+/sw/nios/app/obj/
+/sw/nios/app_bsp/obj/
+/sw/nios/app_bsp/generated.sh
+/sw/nios/app_bsp/Makefile
+/sw/nios/app_bsp/settings.bsp
+
+# Reportes y logs del enlazador/compilador de software
+*.bak
+*.log
