@@ -1,7 +1,8 @@
 module ToneGenerator (
     input  logic AUD_BCLK,
     input  logic AUD_DACLRCK,
-    output logic AUD_DACDAT
+    output logic AUD_DACDAT,
+	 input logic [1:0] SW // para los switches
 );
 
     logic        lrck_d;
@@ -11,6 +12,12 @@ module ToneGenerator (
     logic [15:0] shift;
 
     logic signed [31:0] bypass_out;
+	 
+	 logic signed [15:0] filtered_out;
+	 logic filtered_valid;
+	 logic lrck_edge; 
+
+	 assign lrck_edge = (lrck_d != AUD_DACLRCK);
 
     // ── Generador de muestra del tono ─────────────────────
     always_comb begin
@@ -18,10 +25,21 @@ module ToneGenerator (
     end
 
     // ── Filtro Bypass ─────────────────────────────────────
-    ByPassFilter bypass_inst (
-        .sample_in  (smpl_val),
-        .byPass_out (bypass_out)
-    );
+    //ByPassFilter bypass_inst (
+    //    .sample_in  (smpl_val),
+    //    .byPass_out (bypass_out)
+    //);
+	 
+	 // Instancia para los filtros con el módulo de AudioFi
+	 AudioFilter audio_filter (
+    .clk          (AUD_BCLK),
+    .reset        (1'b0),
+    .sample_valid (lrck_edge),
+    .sample_in    (smpl_val),
+    .filter_sel   (SW),
+    .sample_out   (filtered_out),
+    .sample_out_valid(filtered_valid)
+	 );
 
     // ── Serializador I2S ──────────────────────────────────
     always_ff @(negedge AUD_BCLK) begin
@@ -34,7 +52,9 @@ module ToneGenerator (
             // Aquí ya no cargamos smpl_val directo,
             // sino la salida del filtro bypass
             //shift <= bypass_out[15:0];
-				shift <= bypass_out[31:16];
+				//shift <= bypass_out[31:16];
+				
+				shift <= filtered_out; // ya viene en 16 bits con saturación
 
             // Avanzar muestra una vez por frame completo
             if (AUD_DACLRCK == 1'b1) begin

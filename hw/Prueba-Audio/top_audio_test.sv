@@ -13,7 +13,9 @@ module top_audio_test (
     // I2C para configurar el WM8731
     output logic        FPGA_I2C_SCLK,
 	 output logic [9:0] LEDR,
-    inout  wire         FPGA_I2C_SDAT
+    inout  wire         FPGA_I2C_SDAT,
+	 
+	 input logic [1:0] SW // para los switches
 );
 
     wire pll_locked;
@@ -43,16 +45,24 @@ module top_audio_test (
     ToneGenerator tone_gen (
         .AUD_BCLK    (AUD_BCLK),
         .AUD_DACLRCK (AUD_DACLRCK),
-        .AUD_DACDAT  (AUD_DACDAT)
+        .AUD_DACDAT  (AUD_DACDAT),
+		  .SW          (SW)
     );
 	 
 	 assign LEDR[0] = pll_locked;     // LED0 encendido = PLL estable
-	 assign LEDR[9:2] = '0;
+	 //assign LEDR[9:2] = '0;
+	 assign LEDR[9:5] = '0;   // solo del 5 al 9
+    assign LEDR[2]   = 1'b0; // el 2 por separado
+    assign LEDR[1]   = 1'b0; // el 1 también (estaba comentado)
 	 
 	 logic [15:0] clk_div;
 	 always_ff @(posedge AUD_DACLRCK)
 		  clk_div <= clk_div + 16'd1;
 
-	 assign LEDR[1] = clk_div[15];  // parpadea si DACLRCK está activo
+	 //assign LEDR[1] = clk_div[15];  // parpadea si DACLRCK está activo
+	 
+	 // Para confirmar que los switches funcionan
+	 assign LEDR[3] = SW[0];
+	 assign LEDR[4] = SW[1];
 
 endmodule

@@ -14,10 +14,10 @@ module ByPassFilter (
     always_comb begin
 
         // Fórmula para el filtro
-        //byPass_out = {{16{sample_in[15]}}, sample_in};
+        byPass_out = {{16{sample_in[15]}}, sample_in};
 		  //byPass_out = 32'sd0;
 		  //byPass_out_internal = 32'sd0;
-		  byPass_out = {{16{sample_in[15]}}, sample_in} >>> 8;
+		  //byPass_out = {{16{sample_in[15]}}, sample_in} >>> 8;
     end
 	 
 	 //assign byPass_out = byPass_out_internal;
