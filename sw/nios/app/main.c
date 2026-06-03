@@ -18,10 +18,27 @@
 // Mascara para habilitar interrupciones globales (Processor Interrupt Enable - PIE)
 #define NIOS2_STATUS_PIE_MASK (1 << 0)
 
+// Definicion de estados del reproductor
+typedef enum {
+	STATE_STOP,
+	STATE_PLAY,
+	STATE_PAUSE
+} PlayerState_t;
+
 // Variables globales de estado compartidas (Volatiles para evitar optimizaciones del compilador)
 volatile uint32_t bandera_boton_presionado = 0;
 volatile uint32_t boton_detectado = 0;
 volatile uint32_t bandera_timer_un_segundo = 0;
+
+// Variables de control global del reproductor
+volatile PlayerState_t estado_actual = STATE_STOP;
+volatile uint32_t cancion_actual = 1;
+volatile uint32_t TOTAL_CANCIONES = 10;
+
+// Variables para el control temporal
+volatile uint32_t tiempo_segundos = 0;
+volatile uint32_t minutos = 0;
+volatile uint32_t segundos = 0;
 
 // Esta sera nuestra funcion ISR dedicada a los botones fisicos
 void boton_isr(void) {
@@ -41,7 +58,18 @@ void boton_isr(void) {
 void timer_isr(void) {
 	// Limpiar la bandera de timeout del timer escribiendo un 0 en el registro de estado
 	REG_WRITE(TIMER_BASE, TIMER_STATUS_OFFSET, 0);
-	bandera_timer_un_segundo = 1;
+
+	// El reloj de reproduccion solo avanza si estamos en estado PLAY
+	if (estado_actual == STATE_PLAY) {
+		tiempo_segundos++;
+
+		// Conversion matematica a formato MM:SS
+		segundos = tiempo_segundos % 60;
+		minutos = tiempo_segundos / 60;
+
+		// Levantamos la bandera para indicarle al Super Loop que debe actualizar la interfaz visual
+		bandera_timer_un_segundo = 1;
+	}
 }
 
 // Atributo especial requerido por el compilador GCC de Nios II para manejar el hardware
@@ -103,6 +131,18 @@ void inicializar_timer_1s(void) {
 	NIOS2_WRITE_CTL_REG(NIOS2_CTL_IENABLE, ienable_actual);
 }
 
+void actualizar_interfaz_visual(void) {
+	// Asegurar que el display este habilitado y configurado en MODO TIEMPO (MM:SS)
+	// Escribe en el registro de CONTROL del modulo personalizado
+	REG_WRITE(HEX_DISPLAY_BASE, HEX_CONTROL_OFFSET, HEX_CTRL_ENABLE | HEX_CTRL_MODE_TIME);
+
+	// Formatear los datos para el registro de DATA
+	REG_WRITE(HEX_DISPLAY_BASE, HEX_DATA_OFFSET, tiempo_segundos);
+
+	// Reflejar el estado de las pistas en los LEDs fisicos de la placa como apoyo visual
+	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, cancion_actual);
+}
+
 int main(void) {
 	// Inicializar todo el hardware
 	inicializar_interrupciones_botones();
@@ -111,26 +151,80 @@ int main(void) {
 	// Encender un LED indicador en la tarjeta
 	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x01);
 
-	// SUPER LOOP (Consumo de banderas controladas por interrupcion)
+	// SUPER LOOP - MOTOR DE CONTROL DEL REPRODUCTOR
 	while(1) {
-		// Consumo de interrupcion de botones
+		// 1. GESTION DE BOTONES (Rutinas de control por interrupcion)
 		if (bandera_boton_presionado) {
+			// Consumir bandera de evento
 			bandera_boton_presionado = 0;
-			if (boton_detectado & (1 << 0)) { // KEY0
-				// Simula Play / Pause
-				REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x02);
+
+			// BOTON 0 (KEY0): Comutador de Play/Pausa
+			if (boton_detectado & (1 << 0)) {
+				if (estado_actual == STATE_PLAY) {
+					estado_actual = STATE_PAUSE;
+				} else {
+					estado_actual = STATE_PLAY;
+				}
+				actualizar_interfaz_visual();
 			}
-			if (boton_detectado & (1 << 1)) { // KEY1
-				// Simula Stop
-				REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x04);
+
+			// BOTON 1 (KEY1): Detener Reproduccion
+			if (boton_detectado & (1 << 1)) {
+				estado_actual = STATE_STOP;
+				tiempo_segundos = 0;
+				minutos = 0;
+				segundos = 0;
+				actualizar_interfaz_visual();
 			}
-			boton_detectado = 0;
+
+			// BOTON 2 (KEY2): Siguiente Cancion
+			if (boton_detectado & (1 << 2)) {
+				tiempo_segundos = 0;
+				minutos = 0;
+				segundos = 0;
+				cancion_actual++;
+				if (cancion_actual > TOTAL_CANCIONES) {
+					// Volver a la primera pista
+					cancion_actual = 1;
+				}
+				actualizar_interfaz_visual();
+			}
+
+			// BOTON3 (KEY3): Cancion Anterior
+			if (boton_detectado & (1 << 3)) {
+				tiempo_segundos = 0;
+				minutos = 0;
+				segundos = 0;
+				cancion_actual--;
+				if (cancion_actual < 1) {
+					// Ir a la ultima pista
+					cancion_actual = TOTAL_CANCIONES;
+				}
+				actualizar_interfaz_visual();
+			}
+
+			boton_detectado = 0; // Restablecer el registro de captura procesado
 		}
 
-		//Consumo de interrupcion del Timer
+		// 2. GESTION DEL TIMER (Control Temporal)
 		if (bandera_timer_un_segundo) {
 			bandera_timer_un_segundo = 0;
-			// Aqui se integrara el relog en la Semana 3
+
+			// Actualizar los displays de 7-segmentos con el nuevo tiempo de reproduccion
+			actualizar_interfaz_visual();
+
+			// Monitoreo de finalizcion de pista para reproduccion continua
+			// Se debe proporcionar una bandera o una variable que indique el final
+			if (tiempo_segundos >= 180) {
+				tiempo_segundos = 0;
+				minutos = 0;
+				segundos = 0;
+				cancion_actual++;
+				if (cancion_actual > TOTAL_CANCIONES) {
+					cancion_actual = 1;
+				}
+				actualizar_interfaz_visual();
+			}
 		}
 	}
 
