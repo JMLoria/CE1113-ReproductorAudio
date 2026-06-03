@@ -141,6 +141,9 @@ module Proyecto_II(
 //  Structural coding
 //=======================================================
 
+// Pines de audio no usados (Audio In deshabilitado)
+assign AUD_ADCLRCK = 1'bz;
+
 //=======================================================
 //  Instanciación del soc_system (HPS + NIOS II + periféricos)
 //=======================================================
@@ -221,7 +224,17 @@ soc_system u0 (
     .hex_hex2                        (HEX2),
     .hex_hex3                        (HEX3),
     .hex_hex4                        (HEX4),
-    .hex_hex5                        (HEX5)
+    .hex_hex5                        (HEX5),
+	 
+	 // Audio (codec WM8731) - reproducción WAV
+    .audio_BCLK                      (AUD_BCLK),
+    .audio_DACDAT                    (AUD_DACDAT),
+    .audio_DACLRCK                   (AUD_DACLRCK),
+    .audio_clk_clk                   (AUD_XCK),
+    
+    // Audio Config (I2C para configurar el codec)
+    .audio_config_SDAT               (FPGA_I2C_SDAT),
+    .audio_config_SCLK               (FPGA_I2C_SCLK)
 );
 
 endmodule

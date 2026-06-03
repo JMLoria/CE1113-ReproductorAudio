@@ -30,6 +30,56 @@
          type = "String";
       }
    }
+   element audio
+   {
+      datum _sortIndex
+      {
+         value = "12";
+         type = "int";
+      }
+   }
+   element audio.avalon_audio_slave
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "458752";
+         type = "String";
+      }
+   }
+   element audio_config
+   {
+      datum _sortIndex
+      {
+         value = "13";
+         type = "int";
+      }
+   }
+   element audio_config.avalon_av_config_slave
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "466944";
+         type = "String";
+      }
+   }
+   element audio_pll
+   {
+      datum _sortIndex
+      {
+         value = "11";
+         type = "int";
+      }
+   }
    element buttons_pio
    {
       datum _sortIndex
@@ -236,6 +286,21 @@
  <parameter name="useTestBenchNamingPattern" value="false" />
  <instanceScript></instanceScript>
  <interface
+   name="audio"
+   internal="audio.external_interface"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="audio_clk"
+   internal="audio_pll.audio_clk"
+   type="clock"
+   dir="start" />
+ <interface
+   name="audio_config"
+   internal="audio_config.external_interface"
+   type="conduit"
+   dir="end" />
+ <interface
    name="buttons"
    internal="buttons_pio.external_connection"
    type="conduit"
@@ -285,6 +350,47 @@
   <parameter name="useNonDefaultInitFile" value="false" />
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
+ </module>
+ <module name="audio" kind="altera_up_avalon_audio" version="18.0" enabled="1">
+  <parameter name="AUTO_CLK_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
+  <parameter name="audio_in" value="false" />
+  <parameter name="audio_out" value="true" />
+  <parameter name="avalon_bus_type" value="Memory Mapped" />
+  <parameter name="dw" value="16" />
+ </module>
+ <module
+   name="audio_config"
+   kind="altera_up_avalon_audio_and_video_config"
+   version="18.0"
+   enabled="1">
+  <parameter name="AUTO_CLK_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
+  <parameter name="audio_in" value="Microphone to ADC" />
+  <parameter name="bit_length" value="16" />
+  <parameter name="board" value="DE1-SoC" />
+  <parameter name="d5m_resolution" value="2592 x 1944" />
+  <parameter name="dac_enable" value="true" />
+  <parameter name="data_format" value="Left Justified" />
+  <parameter name="device">On-Board Peripherals</parameter>
+  <parameter name="eai" value="true" />
+  <parameter name="exposure" value="false" />
+  <parameter name="line_in_bypass" value="false" />
+  <parameter name="mic_attenuation" value="-6dB" />
+  <parameter name="mic_bypass" value="false" />
+  <parameter name="sampling_rate" value="48 kHz" />
+  <parameter name="video_format" value="NTSC" />
+ </module>
+ <module
+   name="audio_pll"
+   kind="altera_up_avalon_audio_pll"
+   version="18.0"
+   enabled="1">
+  <parameter name="AUTO_DEVICE" value="5CSEMA5F31C6" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <parameter name="audio_clk_freq" value="11.2896" />
+  <parameter name="device_family" value="Cyclone V" />
+  <parameter name="gui_refclk" value="50.0" />
  </module>
  <module
    name="buttons_pio"
@@ -879,8 +985,8 @@
   <parameter name="width" value="10" />
  </module>
  <module name="nios2" kind="altera_nios2_gen2" version="18.1" enabled="1">
-  <parameter name="AUTO_CLK_CLOCK_DOMAIN" value="1" />
-  <parameter name="AUTO_CLK_RESET_DOMAIN" value="1" />
+  <parameter name="AUTO_CLK_CLOCK_DOMAIN" value="2" />
+  <parameter name="AUTO_CLK_RESET_DOMAIN" value="2" />
   <parameter name="AUTO_DEVICE" value="5CSEMA5F31C6" />
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <parameter name="bht_ramBlockType" value="Automatic" />
@@ -898,7 +1004,7 @@
   <parameter name="dataAddrWidth" value="19" />
   <parameter name="dataMasterHighPerformanceAddrWidth" value="1" />
   <parameter name="dataMasterHighPerformanceMapParam" value="" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='RAM.s1' start='0x0' end='0x10000' type='altera_avalon_onchip_memory2.s1' /><slave name='nios2.debug_mem_slave' start='0x10000' end='0x10800' type='altera_nios2_gen2.debug_mem_slave' /><slave name='sysid.control_slave' start='0x20000' end='0x20008' type='altera_avalon_sysid_qsys.control_slave' /><slave name='jtag_uart.avalon_jtag_slave' start='0x30000' end='0x30008' type='altera_avalon_jtag_uart.avalon_jtag_slave' /><slave name='timer.s1' start='0x40000' end='0x40020' type='altera_avalon_timer.s1' /><slave name='buttons_pio.s1' start='0x50000' end='0x50010' type='altera_avalon_pio.s1' /><slave name='switches_pio.s1' start='0x51000' end='0x51010' type='altera_avalon_pio.s1' /><slave name='leds_pio.s1' start='0x52000' end='0x52010' type='altera_avalon_pio.s1' /><slave name='hex_display.avalon_slave_0' start='0x60000' end='0x60010' type='hex_display_controller.avalon_slave_0' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='RAM.s1' start='0x0' end='0x10000' type='altera_avalon_onchip_memory2.s1' /><slave name='nios2.debug_mem_slave' start='0x10000' end='0x10800' type='altera_nios2_gen2.debug_mem_slave' /><slave name='sysid.control_slave' start='0x20000' end='0x20008' type='altera_avalon_sysid_qsys.control_slave' /><slave name='jtag_uart.avalon_jtag_slave' start='0x30000' end='0x30008' type='altera_avalon_jtag_uart.avalon_jtag_slave' /><slave name='timer.s1' start='0x40000' end='0x40020' type='altera_avalon_timer.s1' /><slave name='buttons_pio.s1' start='0x50000' end='0x50010' type='altera_avalon_pio.s1' /><slave name='switches_pio.s1' start='0x51000' end='0x51010' type='altera_avalon_pio.s1' /><slave name='leds_pio.s1' start='0x52000' end='0x52010' type='altera_avalon_pio.s1' /><slave name='hex_display.avalon_slave_0' start='0x60000' end='0x60010' type='hex_display_controller.avalon_slave_0' /><slave name='audio.avalon_audio_slave' start='0x70000' end='0x70010' type='altera_up_avalon_audio.avalon_audio_slave' /><slave name='audio_config.avalon_av_config_slave' start='0x72000' end='0x72010' type='altera_up_avalon_audio_and_video_config.avalon_av_config_slave' /></address-map>]]></parameter>
   <parameter name="data_master_high_performance_paddr_base" value="0" />
   <parameter name="data_master_high_performance_paddr_size" value="0" />
   <parameter name="data_master_paddr_base" value="0" />
@@ -944,7 +1050,7 @@
   <parameter name="instruction_master_high_performance_paddr_size" value="0" />
   <parameter name="instruction_master_paddr_base" value="0" />
   <parameter name="instruction_master_paddr_size" value="0" />
-  <parameter name="internalIrqMaskSystemInfo" value="14" />
+  <parameter name="internalIrqMaskSystemInfo" value="30" />
   <parameter name="io_regionbase" value="0" />
   <parameter name="io_regionsize" value="0" />
   <parameter name="master_addr_map" value="false" />
@@ -1097,6 +1203,24 @@
    kind="avalon"
    version="18.1"
    start="nios2.data_master"
+   end="audio.avalon_audio_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x00070000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="18.1"
+   start="nios2.data_master"
+   end="audio_config.avalon_av_config_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x00072000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="18.1"
+   start="nios2.data_master"
    end="jtag_uart.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x00030000" />
@@ -1236,6 +1360,8 @@
  <connection kind="clock" version="18.1" start="clk_0.clk" end="buttons_pio.clk" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="switches_pio.clk" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="leds_pio.clk" />
+ <connection kind="clock" version="18.1" start="clk_0.clk" end="audio_config.clk" />
+ <connection kind="clock" version="18.1" start="clk_0.clk" end="audio.clk" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="RAM.clk1" />
  <connection kind="clock" version="18.1" start="clk_0.clk" end="hex_display.clock" />
  <connection
@@ -1243,6 +1369,14 @@
    version="18.1"
    start="clk_0.clk"
    end="hps_0.h2f_lw_axi_clock" />
+ <connection kind="clock" version="18.1" start="clk_0.clk" end="audio_pll.ref_clk" />
+ <connection
+   kind="interrupt"
+   version="18.1"
+   start="nios2.irq"
+   end="audio.interrupt">
+  <parameter name="irqNumber" value="4" />
+ </connection>
  <connection
    kind="interrupt"
    version="18.1"
@@ -1256,6 +1390,11 @@
  <connection kind="interrupt" version="18.1" start="nios2.irq" end="jtag_uart.irq">
   <parameter name="irqNumber" value="1" />
  </connection>
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
+   end="audio_pll.ref_reset" />
  <connection kind="reset" version="18.1" start="clk_0.clk_reset" end="nios2.reset" />
  <connection
    kind="reset"
@@ -1284,12 +1423,22 @@
    version="18.1"
    start="clk_0.clk_reset"
    end="hex_display.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
+   end="audio_config.reset" />
  <connection kind="reset" version="18.1" start="clk_0.clk_reset" end="RAM.reset1" />
  <connection
    kind="reset"
    version="18.1"
    start="hps_0.h2f_reset"
    end="clk_0.clk_in_reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="audio_pll.reset_source"
+   end="audio.reset" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
