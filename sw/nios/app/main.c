@@ -40,15 +40,21 @@ volatile uint32_t tiempo_segundos = 0;
 volatile uint32_t minutos = 0;
 volatile uint32_t segundos = 0;
 
+// Variable global para almacenar el "tiempo del ultimo boton presionado"
+volatile uint32_t tiempo_ultimo_click = 0;
+
 // Esta sera nuestra funcion ISR dedicada a los botones fisicos
 void boton_isr(void) {
 	// 1. Leer que boton fisico genero el flanco de bajada
 	uint32_t edge_capture = REG_READ(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET);
 
-	// 2. Si hay un boton capturado, procesarlo
 	if (edge_capture != 0) {
-		boton_detectado = edge_capture;
-		bandera_boton_presionado = 1;
+		// 2. Si hay un boton capturado, procesarlo
+		if ((bandera_boton_presionado == 0) && ((tiempo_segundos - tiempo_ultimo_click) >= 1 || tiempo_segundos == 0)){
+			boton_detectado = edge_capture;
+			bandera_boton_presionado = 1;
+			tiempo_ultimo_click = tiempo_segundos;
+		}
 
 		// 3. Limpiar el registro de captura escribiendo un '1' bit activo
 		REG_WRITE(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET, edge_capture);
@@ -179,6 +185,10 @@ int main(void) {
 
 			// BOTON 2 (KEY2): Siguiente Cancion
 			if (boton_detectado & (1 << 2)) {
+				// Paso de seguridad, cambiar momentaneamente a STOP
+				estado_actual = STATE_STOP;
+				actualizar_interfaz_visual();
+
 				tiempo_segundos = 0;
 				minutos = 0;
 				segundos = 0;
@@ -187,11 +197,18 @@ int main(void) {
 					// Volver a la primera pista
 					cancion_actual = 1;
 				}
+
+				// Volver a paner en PLAY en la nueva pista
+				estado_actual = STATE_PLAY;
 				actualizar_interfaz_visual();
 			}
 
 			// BOTON3 (KEY3): Cancion Anterior
 			if (boton_detectado & (1 << 3)) {
+				// Paso de seguridad, cambiar momentaneamente a STOP
+				estado_actual = STATE_STOP;
+				actualizar_interfaz_visual();
+
 				tiempo_segundos = 0;
 				minutos = 0;
 				segundos = 0;
@@ -200,6 +217,9 @@ int main(void) {
 					// Ir a la ultima pista
 					cancion_actual = TOTAL_CANCIONES;
 				}
+
+				// Volver a paner en PLAY en la nueva pista
+				estado_actual = STATE_PLAY;
 				actualizar_interfaz_visual();
 			}
 
