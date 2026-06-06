@@ -4,7 +4,7 @@
  * Machine generated for CPU 'nios2' in SOPC Builder design 'soc_system'
  * SOPC Builder design path: ../../soc_system.sopcinfo
  *
- * Generated: Wed Jun 03 20:50:34 CST 2026
+ * Generated: Fri Jun 05 19:11:20 CST 2026
  */
 
 /*
@@ -142,6 +142,7 @@
 #define __ALTERA_UP_AVALON_AUDIO
 #define __ALTERA_UP_AVALON_AUDIO_AND_VIDEO_CONFIG
 #define __AUDIO_FILTER_CONTROL
+#define __AUDIO_SAMPLE_INPUT_HW
 #define __HEX_DISPLAY_CONTROLLER
 
 
@@ -244,12 +245,26 @@
  */
 
 #define ALT_MODULE_CLASS_audio_filter_control_0 audio_filter_control
-#define AUDIO_FILTER_CONTROL_0_BASE 0x10800
+#define AUDIO_FILTER_CONTROL_0_BASE 0x10810
 #define AUDIO_FILTER_CONTROL_0_IRQ -1
 #define AUDIO_FILTER_CONTROL_0_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define AUDIO_FILTER_CONTROL_0_NAME "/dev/audio_filter_control_0"
 #define AUDIO_FILTER_CONTROL_0_SPAN 16
 #define AUDIO_FILTER_CONTROL_0_TYPE "audio_filter_control"
+
+
+/*
+ * audio_sample_input_hw_0 configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_audio_sample_input_hw_0 audio_sample_input_hw
+#define AUDIO_SAMPLE_INPUT_HW_0_BASE 0x10800
+#define AUDIO_SAMPLE_INPUT_HW_0_IRQ -1
+#define AUDIO_SAMPLE_INPUT_HW_0_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define AUDIO_SAMPLE_INPUT_HW_0_NAME "/dev/audio_sample_input_hw_0"
+#define AUDIO_SAMPLE_INPUT_HW_0_SPAN 16
+#define AUDIO_SAMPLE_INPUT_HW_0_TYPE "audio_sample_input_hw"
 
 
 /*
@@ -388,7 +403,7 @@
 #define SYSID_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define SYSID_NAME "/dev/sysid"
 #define SYSID_SPAN 8
-#define SYSID_TIMESTAMP 1780538785
+#define SYSID_TIMESTAMP 1780706373
 #define SYSID_TYPE "altera_avalon_sysid_qsys"
 
 

@@ -85,6 +85,31 @@ module top_audio_test (
     // LEDs escritos desde Nios por PIO, pero no los usamos directo en esta prueba
     wire [9:0] leds_from_nios;
 
+    // Señales de la nueva IP AudioSampleInputAvalon
+    logic        audio_sample_request;
+    wire [15:0] audio_sample_out;
+    wire        audio_sample_out_valid;
+    wire        audio_sample_fifo_full;
+    wire        audio_sample_fifo_empty;
+
+    // Debug de relojes de audio
+    logic [23:0] xck_counter;
+    logic [23:0] bclk_counter;
+    logic [15:0] lrck_counter;
+
+    // Para generar un pulso de solicitud de muestra a 48 kHz
+    logic daclrck_d;
+
+    always_ff @(posedge AUD_BCLK or negedge KEY[0]) begin
+        if (!KEY[0]) begin
+            daclrck_d <= 1'b0;
+        end else begin
+            daclrck_d <= AUD_DACLRCK;
+        end
+    end
+
+    assign audio_sample_request = (daclrck_d != AUD_DACLRCK) && (AUD_DACLRCK == 1'b1);
+
     // --------------------------------------------------------------------
     // soc_system: HPS + Nios + PIO switches + audio config + filter control
     // --------------------------------------------------------------------
@@ -102,6 +127,15 @@ module top_audio_test (
         // I2C para configurar WM8731
         .audio_config_SDAT               (FPGA_I2C_SDAT),
         .audio_config_SCLK               (FPGA_I2C_SCLK),
+
+        // Nueva IP de entrada de muestras
+        .audio_sample_sample_request     (audio_sample_request),
+        .audio_sample_sample_out         (audio_sample_out),
+        .audio_sample_sample_out_valid   (audio_sample_out_valid),
+        .audio_sample_fifo_full          (audio_sample_fifo_full),
+        .audio_sample_fifo_empty         (audio_sample_fifo_empty),
+        .audio_sample_clk_clk            (AUD_BCLK),
+        .audio_sample_reset_reset        (~KEY[0]),
 
         // Botones y switches
         .buttons_export                  (KEY),
@@ -187,6 +221,8 @@ module top_audio_test (
 
     // --------------------------------------------------------------------
     // Generador de tono + filtros RTL
+    // Por ahora sigue usando el tono interno.
+    // Luego se puede modificar para usar audio_sample_out.
     // --------------------------------------------------------------------
     ToneGenerator tone_gen (
         .AUD_BCLK    (AUD_BCLK),
@@ -197,50 +233,49 @@ module top_audio_test (
     );
 
     // --------------------------------------------------------------------
+    // Contadores de debug de relojes de audio
+    // --------------------------------------------------------------------
+    always_ff @(posedge AUD_XCK or negedge KEY[0]) begin
+        if (!KEY[0])
+            xck_counter <= 24'd0;
+        else
+            xck_counter <= xck_counter + 24'd1;
+    end
+
+    always_ff @(posedge AUD_BCLK or negedge KEY[0]) begin
+        if (!KEY[0])
+            bclk_counter <= 24'd0;
+        else
+            bclk_counter <= bclk_counter + 24'd1;
+    end
+
+    always_ff @(posedge AUD_DACLRCK or negedge KEY[0]) begin
+        if (!KEY[0])
+            lrck_counter <= 16'd0;
+        else
+            lrck_counter <= lrck_counter + 16'd1;
+    end
+
+    // --------------------------------------------------------------------
     // LEDs de debug
     // --------------------------------------------------------------------
     assign LEDR[0] = 1'b1;
-
-    // Switches fisicos
-    assign LEDR[3] = SW[0];
-    assign LEDR[4] = SW[1];
 
     // Lo que Nios realmente manda al filtro
     assign LEDR[1] = filter_sel_from_nios[0];
     assign LEDR[2] = filter_sel_from_nios[1];
 
-    //assign LEDR[9:5] = 5'b0;
-	 assign LEDR[5] = xck_counter[23];   // Parpadea si AUD_XCK está activo
-	 assign LEDR[6] = bclk_counter[22];  // Parpadea si AUD_BCLK está activo
-	 assign LEDR[7] = lrck_counter[15];  // Parpadea si AUD_DACLRCK está activo
-	 assign LEDR[8] = 1'b0;
-	 assign LEDR[9] = 1'b0;
-		 
-	 
-	 // Debug de relojes de audio
-		logic [23:0] xck_counter;
-		logic [23:0] bclk_counter;
-		logic [15:0] lrck_counter;
+    // Switches fisicos
+    assign LEDR[3] = SW[0];
+    assign LEDR[4] = SW[1];
 
-		always_ff @(posedge AUD_XCK or negedge KEY[0]) begin
-			 if (!KEY[0])
-				  xck_counter <= 24'd0;
-			 else
-				  xck_counter <= xck_counter + 24'd1;
-		end
+    // Relojes de audio
+    assign LEDR[5] = xck_counter[23];   // Parpadea si AUD_XCK está activo
+    assign LEDR[6] = bclk_counter[22];  // Parpadea si AUD_BCLK está activo
+    assign LEDR[7] = lrck_counter[15];  // Parpadea si AUD_DACLRCK está activo
 
-		always_ff @(posedge AUD_BCLK or negedge KEY[0]) begin
-			 if (!KEY[0])
-				  bclk_counter <= 24'd0;
-			 else
-				  bclk_counter <= bclk_counter + 24'd1;
-		end
-
-		always_ff @(posedge AUD_DACLRCK or negedge KEY[0]) begin
-			 if (!KEY[0])
-				  lrck_counter <= 16'd0;
-			 else
-				  lrck_counter <= lrck_counter + 16'd1;
-		end
+    // Estado del FIFO de entrada de audio
+    assign LEDR[8] = audio_sample_fifo_full;
+    assign LEDR[9] = audio_sample_fifo_empty;
 
 endmodule

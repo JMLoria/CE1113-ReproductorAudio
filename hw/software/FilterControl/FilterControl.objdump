@@ -77,7 +77,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY
  29 .jdi          000049f6  00000000  00000000  0000629b  2**0
                   CONTENTS, READONLY
- 30 .sopcinfo     0029a4ce  00000000  00000000  0000ac91  2**0
+ 30 .sopcinfo     0029fef9  00000000  00000000  0000ac91  2**0
                   CONTENTS, READONLY
 SYMBOL TABLE:
 00000000 l    d  .entry	00000000 .entry
@@ -285,7 +285,7 @@ int main(void)
 
     FILTER_CTRL_REG = 0x0;
   7c:	04000074 	movhi	r16,1
-  80:	84020004 	addi	r16,r16,2048
+  80:	84020404 	addi	r16,r16,2064
     alt_putstr("Registro inicializado en bypass\n");
   84:	01000034 	movhi	r4,0
     unsigned int filter_sel;

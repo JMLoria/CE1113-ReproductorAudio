@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>03/06/2026 11:05:07 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1780549507683</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>05/06/2026 07:11:17 PM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1780708277708</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\intelFPGA_lite\P2-Empotrados\CE1113-ReproductorAudio\hw\software\FilterControl_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\soc_system.sopcinfo</SopcDesignFile>
@@ -905,8 +905,14 @@
                 <attributes>memory</attributes>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>audio_filter_control_0</slaveDescriptor>
+                <slaveDescriptor>audio_sample_input_hw_0</slaveDescriptor>
                 <addressRange>0x00010800 - 0x0001080F</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>audio_filter_control_0</slaveDescriptor>
+                <addressRange>0x00010810 - 0x0001081F</addressRange>
                 <addressSpan>16</addressSpan>
                 <attributes/>
         </MemoryMap>
