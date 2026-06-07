@@ -141,6 +141,17 @@ module Proyecto_II(
 //  Structural coding
 //=======================================================
 
+//=======================================================
+//  STUBS TEMPORALES - audio de Noemi (R_DSP)
+//  TODO: reemplazar cuando Noemi traiga su RTL (AudioFilter,
+//        serializador, generador de sample_request)
+//=======================================================
+wire [15:0] audio_sample_out;       // salida del FIFO (irá al AudioFilter)
+wire        audio_sample_out_valid;
+wire        audio_fifo_full;
+wire        audio_fifo_empty;
+wire [1:0]  filter_sel;             // selección de filtro (irá al AudioFilter)
+
 // Pines de audio no usados (Audio In deshabilitado)
 assign AUD_ADCLRCK = 1'bz;
 
@@ -234,7 +245,29 @@ soc_system u0 (
     
     // Audio Config (I2C para configurar el codec)
     .audio_config_SDAT               (FPGA_I2C_SDAT),
-    .audio_config_SCLK               (FPGA_I2C_SCLK)
+    .audio_config_SCLK               (FPGA_I2C_SCLK),
+	 
+	 // VGA - visualización de metadatos y filtros
+    .vga_CLK                         (VGA_CLK),
+    .vga_HS                          (VGA_HS),
+    .vga_VS                          (VGA_VS),
+    .vga_BLANK                       (VGA_BLANK_N),
+    .vga_SYNC                        (VGA_SYNC_N),
+    .vga_R                           (VGA_R),
+    .vga_G                           (VGA_G),
+    .vga_B                           (VGA_B),
+    .vga_pll_locked_export           (),
+    
+    // ===== STUBS TEMPORALES - audio de Noemi (R_DSP) =====
+    // TODO: reemplazar cuando Noemi traiga su RTL
+    .filter_sel_export               (filter_sel),
+    .sample_clock_clk                (CLOCK_50),                 // TODO: conectar a AUD_BCLK
+    .sample_reset_reset              (1'b0),                     // TODO: reset del dominio audio
+    .audio_stream_sample_request     (1'b0),                     // TODO: pulso desde AUD_DACLRCK
+    .audio_stream_sample_out         (audio_sample_out),
+    .audio_stream_sample_out_valid   (audio_sample_out_valid),
+    .audio_stream_fifo_full          (audio_fifo_full),
+    .audio_stream_fifo_empty         (audio_fifo_empty)
 );
 
 endmodule

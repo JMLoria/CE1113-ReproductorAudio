@@ -6,8 +6,14 @@
 			audio_clk_clk                   : out   std_logic;                                        -- clk
 			audio_config_SDAT               : inout std_logic                     := 'X';             -- SDAT
 			audio_config_SCLK               : out   std_logic;                                        -- SCLK
+			audio_stream_sample_request     : in    std_logic                     := 'X';             -- sample_request
+			audio_stream_sample_out         : out   std_logic_vector(15 downto 0);                    -- sample_out
+			audio_stream_sample_out_valid   : out   std_logic;                                        -- sample_out_valid
+			audio_stream_fifo_full          : out   std_logic;                                        -- fifo_full
+			audio_stream_fifo_empty         : out   std_logic;                                        -- fifo_empty
 			buttons_export                  : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- export
 			clk_clk                         : in    std_logic                     := 'X';             -- clk
+			filter_sel_export               : out   std_logic_vector(1 downto 0);                     -- export
 			hex_hex0                        : out   std_logic_vector(6 downto 0);                     -- hex0
 			hex_hex1                        : out   std_logic_vector(6 downto 0);                     -- hex1
 			hex_hex2                        : out   std_logic_vector(6 downto 0);                     -- hex2
@@ -63,91 +69,103 @@
 			memory_mem_odt                  : out   std_logic;                                        -- mem_odt
 			memory_mem_dm                   : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			memory_oct_rzqin                : in    std_logic                     := 'X';             -- oct_rzqin
-			switches_export                 : in    std_logic_vector(9 downto 0)  := (others => 'X'); -- export
-			filter_sel_export               : out   std_logic_vector(1 downto 0);                     -- export
 			sample_clock_clk                : in    std_logic                     := 'X';             -- clk
 			sample_reset_reset              : in    std_logic                     := 'X';             -- reset
-			audio_stream_sample_request     : in    std_logic                     := 'X';             -- sample_request
-			audio_stream_sample_out         : out   std_logic_vector(15 downto 0);                    -- sample_out
-			audio_stream_sample_out_valid   : out   std_logic;                                        -- sample_out_valid
-			audio_stream_fifo_full          : out   std_logic;                                        -- fifo_full
-			audio_stream_fifo_empty         : out   std_logic                                         -- fifo_empty
+			switches_export                 : in    std_logic_vector(9 downto 0)  := (others => 'X'); -- export
+			vga_CLK                         : out   std_logic;                                        -- CLK
+			vga_HS                          : out   std_logic;                                        -- HS
+			vga_VS                          : out   std_logic;                                        -- VS
+			vga_BLANK                       : out   std_logic;                                        -- BLANK
+			vga_SYNC                        : out   std_logic;                                        -- SYNC
+			vga_R                           : out   std_logic_vector(7 downto 0);                     -- R
+			vga_G                           : out   std_logic_vector(7 downto 0);                     -- G
+			vga_B                           : out   std_logic_vector(7 downto 0);                     -- B
+			vga_pll_locked_export           : out   std_logic                                         -- export
 		);
 	end component soc_system;
 
 	u0 : component soc_system
 		port map (
-			audio_BCLK                      => CONNECTED_TO_audio_BCLK,                      --        audio.BCLK
-			audio_DACDAT                    => CONNECTED_TO_audio_DACDAT,                    --             .DACDAT
-			audio_DACLRCK                   => CONNECTED_TO_audio_DACLRCK,                   --             .DACLRCK
-			audio_clk_clk                   => CONNECTED_TO_audio_clk_clk,                   --    audio_clk.clk
-			audio_config_SDAT               => CONNECTED_TO_audio_config_SDAT,               -- audio_config.SDAT
-			audio_config_SCLK               => CONNECTED_TO_audio_config_SCLK,               --             .SCLK
-			buttons_export                  => CONNECTED_TO_buttons_export,                  --      buttons.export
-			clk_clk                         => CONNECTED_TO_clk_clk,                         --          clk.clk
-			hex_hex0                        => CONNECTED_TO_hex_hex0,                        --          hex.hex0
-			hex_hex1                        => CONNECTED_TO_hex_hex1,                        --             .hex1
-			hex_hex2                        => CONNECTED_TO_hex_hex2,                        --             .hex2
-			hex_hex3                        => CONNECTED_TO_hex_hex3,                        --             .hex3
-			hex_hex4                        => CONNECTED_TO_hex_hex4,                        --             .hex4
-			hex_hex5                        => CONNECTED_TO_hex_hex5,                        --             .hex5
-			hps_io_hps_io_emac1_inst_TX_CLK => CONNECTED_TO_hps_io_hps_io_emac1_inst_TX_CLK, --       hps_io.hps_io_emac1_inst_TX_CLK
-			hps_io_hps_io_emac1_inst_TXD0   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD0,   --             .hps_io_emac1_inst_TXD0
-			hps_io_hps_io_emac1_inst_TXD1   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD1,   --             .hps_io_emac1_inst_TXD1
-			hps_io_hps_io_emac1_inst_TXD2   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD2,   --             .hps_io_emac1_inst_TXD2
-			hps_io_hps_io_emac1_inst_TXD3   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD3,   --             .hps_io_emac1_inst_TXD3
-			hps_io_hps_io_emac1_inst_RXD0   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD0,   --             .hps_io_emac1_inst_RXD0
-			hps_io_hps_io_emac1_inst_MDIO   => CONNECTED_TO_hps_io_hps_io_emac1_inst_MDIO,   --             .hps_io_emac1_inst_MDIO
-			hps_io_hps_io_emac1_inst_MDC    => CONNECTED_TO_hps_io_hps_io_emac1_inst_MDC,    --             .hps_io_emac1_inst_MDC
-			hps_io_hps_io_emac1_inst_RX_CTL => CONNECTED_TO_hps_io_hps_io_emac1_inst_RX_CTL, --             .hps_io_emac1_inst_RX_CTL
-			hps_io_hps_io_emac1_inst_TX_CTL => CONNECTED_TO_hps_io_hps_io_emac1_inst_TX_CTL, --             .hps_io_emac1_inst_TX_CTL
-			hps_io_hps_io_emac1_inst_RX_CLK => CONNECTED_TO_hps_io_hps_io_emac1_inst_RX_CLK, --             .hps_io_emac1_inst_RX_CLK
-			hps_io_hps_io_emac1_inst_RXD1   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD1,   --             .hps_io_emac1_inst_RXD1
-			hps_io_hps_io_emac1_inst_RXD2   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD2,   --             .hps_io_emac1_inst_RXD2
-			hps_io_hps_io_emac1_inst_RXD3   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD3,   --             .hps_io_emac1_inst_RXD3
-			hps_io_hps_io_sdio_inst_CMD     => CONNECTED_TO_hps_io_hps_io_sdio_inst_CMD,     --             .hps_io_sdio_inst_CMD
-			hps_io_hps_io_sdio_inst_D0      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D0,      --             .hps_io_sdio_inst_D0
-			hps_io_hps_io_sdio_inst_D1      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D1,      --             .hps_io_sdio_inst_D1
-			hps_io_hps_io_sdio_inst_CLK     => CONNECTED_TO_hps_io_hps_io_sdio_inst_CLK,     --             .hps_io_sdio_inst_CLK
-			hps_io_hps_io_sdio_inst_D2      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D2,      --             .hps_io_sdio_inst_D2
-			hps_io_hps_io_sdio_inst_D3      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D3,      --             .hps_io_sdio_inst_D3
-			hps_io_hps_io_spim1_inst_SS1    => CONNECTED_TO_hps_io_hps_io_spim1_inst_SS1,    --             .hps_io_spim1_inst_SS1
-			hps_io_hps_io_spim1_inst_CLK    => CONNECTED_TO_hps_io_hps_io_spim1_inst_CLK,    --             .hps_io_spim1_inst_CLK
-			hps_io_hps_io_spim1_inst_MOSI   => CONNECTED_TO_hps_io_hps_io_spim1_inst_MOSI,   --             .hps_io_spim1_inst_MOSI
-			hps_io_hps_io_spim1_inst_MISO   => CONNECTED_TO_hps_io_hps_io_spim1_inst_MISO,   --             .hps_io_spim1_inst_MISO
-			hps_io_hps_io_spim1_inst_SS0    => CONNECTED_TO_hps_io_hps_io_spim1_inst_SS0,    --             .hps_io_spim1_inst_SS0
-			hps_io_hps_io_uart0_inst_RX     => CONNECTED_TO_hps_io_hps_io_uart0_inst_RX,     --             .hps_io_uart0_inst_RX
-			hps_io_hps_io_uart0_inst_TX     => CONNECTED_TO_hps_io_hps_io_uart0_inst_TX,     --             .hps_io_uart0_inst_TX
-			hps_io_hps_io_i2c0_inst_SDA     => CONNECTED_TO_hps_io_hps_io_i2c0_inst_SDA,     --             .hps_io_i2c0_inst_SDA
-			hps_io_hps_io_i2c0_inst_SCL     => CONNECTED_TO_hps_io_hps_io_i2c0_inst_SCL,     --             .hps_io_i2c0_inst_SCL
-			hps_io_hps_io_i2c1_inst_SDA     => CONNECTED_TO_hps_io_hps_io_i2c1_inst_SDA,     --             .hps_io_i2c1_inst_SDA
-			hps_io_hps_io_i2c1_inst_SCL     => CONNECTED_TO_hps_io_hps_io_i2c1_inst_SCL,     --             .hps_io_i2c1_inst_SCL
-			hps_io_hps_io_gpio_inst_GPIO01  => CONNECTED_TO_hps_io_hps_io_gpio_inst_GPIO01,  --             .hps_io_gpio_inst_GPIO01
-			leds_export                     => CONNECTED_TO_leds_export,                     --         leds.export
-			memory_mem_a                    => CONNECTED_TO_memory_mem_a,                    --       memory.mem_a
-			memory_mem_ba                   => CONNECTED_TO_memory_mem_ba,                   --             .mem_ba
-			memory_mem_ck                   => CONNECTED_TO_memory_mem_ck,                   --             .mem_ck
-			memory_mem_ck_n                 => CONNECTED_TO_memory_mem_ck_n,                 --             .mem_ck_n
-			memory_mem_cke                  => CONNECTED_TO_memory_mem_cke,                  --             .mem_cke
-			memory_mem_cs_n                 => CONNECTED_TO_memory_mem_cs_n,                 --             .mem_cs_n
-			memory_mem_ras_n                => CONNECTED_TO_memory_mem_ras_n,                --             .mem_ras_n
-			memory_mem_cas_n                => CONNECTED_TO_memory_mem_cas_n,                --             .mem_cas_n
-			memory_mem_we_n                 => CONNECTED_TO_memory_mem_we_n,                 --             .mem_we_n
-			memory_mem_reset_n              => CONNECTED_TO_memory_mem_reset_n,              --             .mem_reset_n
-			memory_mem_dq                   => CONNECTED_TO_memory_mem_dq,                   --             .mem_dq
-			memory_mem_dqs                  => CONNECTED_TO_memory_mem_dqs,                  --             .mem_dqs
-			memory_mem_dqs_n                => CONNECTED_TO_memory_mem_dqs_n,                --             .mem_dqs_n
-			memory_mem_odt                  => CONNECTED_TO_memory_mem_odt,                  --             .mem_odt
-			memory_mem_dm                   => CONNECTED_TO_memory_mem_dm,                   --             .mem_dm
-			memory_oct_rzqin                => CONNECTED_TO_memory_oct_rzqin,                --             .oct_rzqin
-			switches_export                 => CONNECTED_TO_switches_export,                 --     switches.export
-			filter_sel_export               => CONNECTED_TO_filter_sel_export,               --   filter_sel.export
-			sample_clock_clk                => CONNECTED_TO_sample_clock_clk,                -- sample_clock.clk
-			sample_reset_reset              => CONNECTED_TO_sample_reset_reset,              -- sample_reset.reset
-			audio_stream_sample_request     => CONNECTED_TO_audio_stream_sample_request,     -- audio_stream.sample_request
-			audio_stream_sample_out         => CONNECTED_TO_audio_stream_sample_out,         --             .sample_out
-			audio_stream_sample_out_valid   => CONNECTED_TO_audio_stream_sample_out_valid,   --             .sample_out_valid
-			audio_stream_fifo_full          => CONNECTED_TO_audio_stream_fifo_full,          --             .fifo_full
-			audio_stream_fifo_empty         => CONNECTED_TO_audio_stream_fifo_empty          --             .fifo_empty
+			audio_BCLK                      => CONNECTED_TO_audio_BCLK,                      --          audio.BCLK
+			audio_DACDAT                    => CONNECTED_TO_audio_DACDAT,                    --               .DACDAT
+			audio_DACLRCK                   => CONNECTED_TO_audio_DACLRCK,                   --               .DACLRCK
+			audio_clk_clk                   => CONNECTED_TO_audio_clk_clk,                   --      audio_clk.clk
+			audio_config_SDAT               => CONNECTED_TO_audio_config_SDAT,               --   audio_config.SDAT
+			audio_config_SCLK               => CONNECTED_TO_audio_config_SCLK,               --               .SCLK
+			audio_stream_sample_request     => CONNECTED_TO_audio_stream_sample_request,     --   audio_stream.sample_request
+			audio_stream_sample_out         => CONNECTED_TO_audio_stream_sample_out,         --               .sample_out
+			audio_stream_sample_out_valid   => CONNECTED_TO_audio_stream_sample_out_valid,   --               .sample_out_valid
+			audio_stream_fifo_full          => CONNECTED_TO_audio_stream_fifo_full,          --               .fifo_full
+			audio_stream_fifo_empty         => CONNECTED_TO_audio_stream_fifo_empty,         --               .fifo_empty
+			buttons_export                  => CONNECTED_TO_buttons_export,                  --        buttons.export
+			clk_clk                         => CONNECTED_TO_clk_clk,                         --            clk.clk
+			filter_sel_export               => CONNECTED_TO_filter_sel_export,               --     filter_sel.export
+			hex_hex0                        => CONNECTED_TO_hex_hex0,                        --            hex.hex0
+			hex_hex1                        => CONNECTED_TO_hex_hex1,                        --               .hex1
+			hex_hex2                        => CONNECTED_TO_hex_hex2,                        --               .hex2
+			hex_hex3                        => CONNECTED_TO_hex_hex3,                        --               .hex3
+			hex_hex4                        => CONNECTED_TO_hex_hex4,                        --               .hex4
+			hex_hex5                        => CONNECTED_TO_hex_hex5,                        --               .hex5
+			hps_io_hps_io_emac1_inst_TX_CLK => CONNECTED_TO_hps_io_hps_io_emac1_inst_TX_CLK, --         hps_io.hps_io_emac1_inst_TX_CLK
+			hps_io_hps_io_emac1_inst_TXD0   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD0,   --               .hps_io_emac1_inst_TXD0
+			hps_io_hps_io_emac1_inst_TXD1   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD1,   --               .hps_io_emac1_inst_TXD1
+			hps_io_hps_io_emac1_inst_TXD2   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD2,   --               .hps_io_emac1_inst_TXD2
+			hps_io_hps_io_emac1_inst_TXD3   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD3,   --               .hps_io_emac1_inst_TXD3
+			hps_io_hps_io_emac1_inst_RXD0   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD0,   --               .hps_io_emac1_inst_RXD0
+			hps_io_hps_io_emac1_inst_MDIO   => CONNECTED_TO_hps_io_hps_io_emac1_inst_MDIO,   --               .hps_io_emac1_inst_MDIO
+			hps_io_hps_io_emac1_inst_MDC    => CONNECTED_TO_hps_io_hps_io_emac1_inst_MDC,    --               .hps_io_emac1_inst_MDC
+			hps_io_hps_io_emac1_inst_RX_CTL => CONNECTED_TO_hps_io_hps_io_emac1_inst_RX_CTL, --               .hps_io_emac1_inst_RX_CTL
+			hps_io_hps_io_emac1_inst_TX_CTL => CONNECTED_TO_hps_io_hps_io_emac1_inst_TX_CTL, --               .hps_io_emac1_inst_TX_CTL
+			hps_io_hps_io_emac1_inst_RX_CLK => CONNECTED_TO_hps_io_hps_io_emac1_inst_RX_CLK, --               .hps_io_emac1_inst_RX_CLK
+			hps_io_hps_io_emac1_inst_RXD1   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD1,   --               .hps_io_emac1_inst_RXD1
+			hps_io_hps_io_emac1_inst_RXD2   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD2,   --               .hps_io_emac1_inst_RXD2
+			hps_io_hps_io_emac1_inst_RXD3   => CONNECTED_TO_hps_io_hps_io_emac1_inst_RXD3,   --               .hps_io_emac1_inst_RXD3
+			hps_io_hps_io_sdio_inst_CMD     => CONNECTED_TO_hps_io_hps_io_sdio_inst_CMD,     --               .hps_io_sdio_inst_CMD
+			hps_io_hps_io_sdio_inst_D0      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D0,      --               .hps_io_sdio_inst_D0
+			hps_io_hps_io_sdio_inst_D1      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D1,      --               .hps_io_sdio_inst_D1
+			hps_io_hps_io_sdio_inst_CLK     => CONNECTED_TO_hps_io_hps_io_sdio_inst_CLK,     --               .hps_io_sdio_inst_CLK
+			hps_io_hps_io_sdio_inst_D2      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D2,      --               .hps_io_sdio_inst_D2
+			hps_io_hps_io_sdio_inst_D3      => CONNECTED_TO_hps_io_hps_io_sdio_inst_D3,      --               .hps_io_sdio_inst_D3
+			hps_io_hps_io_spim1_inst_SS1    => CONNECTED_TO_hps_io_hps_io_spim1_inst_SS1,    --               .hps_io_spim1_inst_SS1
+			hps_io_hps_io_spim1_inst_CLK    => CONNECTED_TO_hps_io_hps_io_spim1_inst_CLK,    --               .hps_io_spim1_inst_CLK
+			hps_io_hps_io_spim1_inst_MOSI   => CONNECTED_TO_hps_io_hps_io_spim1_inst_MOSI,   --               .hps_io_spim1_inst_MOSI
+			hps_io_hps_io_spim1_inst_MISO   => CONNECTED_TO_hps_io_hps_io_spim1_inst_MISO,   --               .hps_io_spim1_inst_MISO
+			hps_io_hps_io_spim1_inst_SS0    => CONNECTED_TO_hps_io_hps_io_spim1_inst_SS0,    --               .hps_io_spim1_inst_SS0
+			hps_io_hps_io_uart0_inst_RX     => CONNECTED_TO_hps_io_hps_io_uart0_inst_RX,     --               .hps_io_uart0_inst_RX
+			hps_io_hps_io_uart0_inst_TX     => CONNECTED_TO_hps_io_hps_io_uart0_inst_TX,     --               .hps_io_uart0_inst_TX
+			hps_io_hps_io_i2c0_inst_SDA     => CONNECTED_TO_hps_io_hps_io_i2c0_inst_SDA,     --               .hps_io_i2c0_inst_SDA
+			hps_io_hps_io_i2c0_inst_SCL     => CONNECTED_TO_hps_io_hps_io_i2c0_inst_SCL,     --               .hps_io_i2c0_inst_SCL
+			hps_io_hps_io_i2c1_inst_SDA     => CONNECTED_TO_hps_io_hps_io_i2c1_inst_SDA,     --               .hps_io_i2c1_inst_SDA
+			hps_io_hps_io_i2c1_inst_SCL     => CONNECTED_TO_hps_io_hps_io_i2c1_inst_SCL,     --               .hps_io_i2c1_inst_SCL
+			hps_io_hps_io_gpio_inst_GPIO01  => CONNECTED_TO_hps_io_hps_io_gpio_inst_GPIO01,  --               .hps_io_gpio_inst_GPIO01
+			leds_export                     => CONNECTED_TO_leds_export,                     --           leds.export
+			memory_mem_a                    => CONNECTED_TO_memory_mem_a,                    --         memory.mem_a
+			memory_mem_ba                   => CONNECTED_TO_memory_mem_ba,                   --               .mem_ba
+			memory_mem_ck                   => CONNECTED_TO_memory_mem_ck,                   --               .mem_ck
+			memory_mem_ck_n                 => CONNECTED_TO_memory_mem_ck_n,                 --               .mem_ck_n
+			memory_mem_cke                  => CONNECTED_TO_memory_mem_cke,                  --               .mem_cke
+			memory_mem_cs_n                 => CONNECTED_TO_memory_mem_cs_n,                 --               .mem_cs_n
+			memory_mem_ras_n                => CONNECTED_TO_memory_mem_ras_n,                --               .mem_ras_n
+			memory_mem_cas_n                => CONNECTED_TO_memory_mem_cas_n,                --               .mem_cas_n
+			memory_mem_we_n                 => CONNECTED_TO_memory_mem_we_n,                 --               .mem_we_n
+			memory_mem_reset_n              => CONNECTED_TO_memory_mem_reset_n,              --               .mem_reset_n
+			memory_mem_dq                   => CONNECTED_TO_memory_mem_dq,                   --               .mem_dq
+			memory_mem_dqs                  => CONNECTED_TO_memory_mem_dqs,                  --               .mem_dqs
+			memory_mem_dqs_n                => CONNECTED_TO_memory_mem_dqs_n,                --               .mem_dqs_n
+			memory_mem_odt                  => CONNECTED_TO_memory_mem_odt,                  --               .mem_odt
+			memory_mem_dm                   => CONNECTED_TO_memory_mem_dm,                   --               .mem_dm
+			memory_oct_rzqin                => CONNECTED_TO_memory_oct_rzqin,                --               .oct_rzqin
+			sample_clock_clk                => CONNECTED_TO_sample_clock_clk,                --   sample_clock.clk
+			sample_reset_reset              => CONNECTED_TO_sample_reset_reset,              --   sample_reset.reset
+			switches_export                 => CONNECTED_TO_switches_export,                 --       switches.export
+			vga_CLK                         => CONNECTED_TO_vga_CLK,                         --            vga.CLK
+			vga_HS                          => CONNECTED_TO_vga_HS,                          --               .HS
+			vga_VS                          => CONNECTED_TO_vga_VS,                          --               .VS
+			vga_BLANK                       => CONNECTED_TO_vga_BLANK,                       --               .BLANK
+			vga_SYNC                        => CONNECTED_TO_vga_SYNC,                        --               .SYNC
+			vga_R                           => CONNECTED_TO_vga_R,                           --               .R
+			vga_G                           => CONNECTED_TO_vga_G,                           --               .G
+			vga_B                           => CONNECTED_TO_vga_B,                           --               .B
+			vga_pll_locked_export           => CONNECTED_TO_vga_pll_locked_export            -- vga_pll_locked.export
 		);
 

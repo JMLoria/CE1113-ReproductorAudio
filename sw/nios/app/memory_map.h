@@ -25,6 +25,8 @@
 #define AUDIO_CONFIG_BASE     0x00072000U   /* Config I2C del codec WM8731 */
 #define AUDIO_FILTER_CONTROL_BASE  0x00080000U  /* Selección de filtro (R_DSP) */
 #define AUDIO_SAMPLE_INPUT_BASE    0x00081000U  /* FIFO de muestras (R_DSP) */
+#define CHAR_CTRL_BASE        0x00090000U   /* VGA: control char buffer */
+#define CHAR_BUFFER_BASE      0x00094000U   /* VGA: buffer de caracteres 80x60 */
 /* ==========================================================
  * IRQs del NIOS II
  * ========================================================== */
@@ -125,6 +127,27 @@
 #define SAMPLE_CTRL_ENABLE     (1 << 0)
 #define SAMPLE_CTRL_CLEAR      (1 << 1)   /* writedata[1]=1 limpia flags */
 /* ==========================================================
+ * VGA - Character Buffer for VGA Display (REQ-09)
+ *
+ * Grilla de 80x60 caracteres (modo texto). Resolución 640x480.
+ * El NIOS escribe códigos ASCII; el HW renderiza la fuente.
+ *
+ * Para escribir un carácter en la posición (x, y):
+ *   dirección = CHAR_BUFFER_BASE + (y << 7) + x
+ * El desplazamiento de fila es 128 (1 << 7) aunque solo se
+ * usen 80 columnas (organización interna del IP).
+ *
+ * El acceso es por BYTE (cada carácter es 1 byte ASCII),
+ * por eso se usa un puntero (volatile char *), no uint32_t.
+ * ========================================================== */
+#define VGA_COLS              80
+#define VGA_ROWS              60
+/* Dirección de un carácter en (x, y) dentro del buffer */
+#define CHAR_ADDR(x, y)       (CHAR_BUFFER_BASE + ((y) << 7) + (x))
+/* Registro de control del char buffer (resolución, etc.).
+ * Con la config por defecto normalmente no se necesita tocar. */
+#define CHAR_CTRL_RESOLUTION_OFFSET  0x00
+/* ==========================================================
  * Offsets de registros - PIOs (Parallel I/O)
  * ========================================================== */
 #define PIO_DATA_OFFSET       0x00
@@ -167,6 +190,9 @@
  *   if (!(st & SAMPLE_STATUS_FIFO_FULL)) {
  *       REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra & 0xFFFF);
  *   }
+ *
+ *   // Escribir un carácter en VGA en la posición (x, y):
+ *   *((volatile char *)CHAR_ADDR(10, 5)) = 'A';
  * ========================================================== */
 #define REG_WRITE(base, offset, value) \
     (*((volatile uint32_t *)((base) + (offset))) = (value))
