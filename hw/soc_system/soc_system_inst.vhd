@@ -3,6 +3,7 @@
 			audio_BCLK                      : in    std_logic                     := 'X';             -- BCLK
 			audio_DACDAT                    : out   std_logic;                                        -- DACDAT
 			audio_DACLRCK                   : in    std_logic                     := 'X';             -- DACLRCK
+			audio_clk_clk                   : out   std_logic;                                        -- clk
 			audio_config_SDAT               : inout std_logic                     := 'X';             -- SDAT
 			audio_config_SCLK               : out   std_logic;                                        -- SCLK
 			buttons_export                  : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- export
@@ -63,7 +64,14 @@
 			memory_mem_dm                   : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			memory_oct_rzqin                : in    std_logic                     := 'X';             -- oct_rzqin
 			switches_export                 : in    std_logic_vector(9 downto 0)  := (others => 'X'); -- export
-			audio_clk_clk                   : out   std_logic                                         -- clk
+			filter_sel_export               : out   std_logic_vector(1 downto 0);                     -- export
+			sample_clock_clk                : in    std_logic                     := 'X';             -- clk
+			sample_reset_reset              : in    std_logic                     := 'X';             -- reset
+			audio_stream_sample_request     : in    std_logic                     := 'X';             -- sample_request
+			audio_stream_sample_out         : out   std_logic_vector(15 downto 0);                    -- sample_out
+			audio_stream_sample_out_valid   : out   std_logic;                                        -- sample_out_valid
+			audio_stream_fifo_full          : out   std_logic;                                        -- fifo_full
+			audio_stream_fifo_empty         : out   std_logic                                         -- fifo_empty
 		);
 	end component soc_system;
 
@@ -72,6 +80,7 @@
 			audio_BCLK                      => CONNECTED_TO_audio_BCLK,                      --        audio.BCLK
 			audio_DACDAT                    => CONNECTED_TO_audio_DACDAT,                    --             .DACDAT
 			audio_DACLRCK                   => CONNECTED_TO_audio_DACLRCK,                   --             .DACLRCK
+			audio_clk_clk                   => CONNECTED_TO_audio_clk_clk,                   --    audio_clk.clk
 			audio_config_SDAT               => CONNECTED_TO_audio_config_SDAT,               -- audio_config.SDAT
 			audio_config_SCLK               => CONNECTED_TO_audio_config_SCLK,               --             .SCLK
 			buttons_export                  => CONNECTED_TO_buttons_export,                  --      buttons.export
@@ -132,6 +141,13 @@
 			memory_mem_dm                   => CONNECTED_TO_memory_mem_dm,                   --             .mem_dm
 			memory_oct_rzqin                => CONNECTED_TO_memory_oct_rzqin,                --             .oct_rzqin
 			switches_export                 => CONNECTED_TO_switches_export,                 --     switches.export
-			audio_clk_clk                   => CONNECTED_TO_audio_clk_clk                    --    audio_clk.clk
+			filter_sel_export               => CONNECTED_TO_filter_sel_export,               --   filter_sel.export
+			sample_clock_clk                => CONNECTED_TO_sample_clock_clk,                -- sample_clock.clk
+			sample_reset_reset              => CONNECTED_TO_sample_reset_reset,              -- sample_reset.reset
+			audio_stream_sample_request     => CONNECTED_TO_audio_stream_sample_request,     -- audio_stream.sample_request
+			audio_stream_sample_out         => CONNECTED_TO_audio_stream_sample_out,         --             .sample_out
+			audio_stream_sample_out_valid   => CONNECTED_TO_audio_stream_sample_out_valid,   --             .sample_out_valid
+			audio_stream_fifo_full          => CONNECTED_TO_audio_stream_fifo_full,          --             .fifo_full
+			audio_stream_fifo_empty         => CONNECTED_TO_audio_stream_fifo_empty          --             .fifo_empty
 		);
 

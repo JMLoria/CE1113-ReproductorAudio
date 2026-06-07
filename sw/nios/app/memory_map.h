@@ -23,6 +23,8 @@
 #define HEX_DISPLAY_BASE      0x00060000U   /* módulo personalizado */
 #define AUDIO_BASE            0x00070000U   /* Audio IP (reproducción) */
 #define AUDIO_CONFIG_BASE     0x00072000U   /* Config I2C del codec WM8731 */
+#define AUDIO_FILTER_CONTROL_BASE  0x00080000U  /* Selección de filtro (R_DSP) */
+#define AUDIO_SAMPLE_INPUT_BASE    0x00081000U  /* FIFO de muestras (R_DSP) */
 /* ==========================================================
  * IRQs del NIOS II
  * ========================================================== */
@@ -34,7 +36,6 @@
  * HEX Display Controller (REQ-04, REQ-10)
  *
  * Módulo personalizado que controla los 6 displays de 7-seg.
- * Diseñado por R_SoC.
  * ========================================================== */
 /* Offsets de registros */
 #define HEX_CONTROL_OFFSET    0x00
@@ -78,7 +79,51 @@
  * Configura el codec WM8731 por I2C al arrancar (Auto Initialize).
  * Normalmente no se requiere acceso manual a sus registros.
  * ========================================================== */
+/* ==========================================================
+ * Audio Filter Control (R_DSP - Noemi)
  *
+ * Registro de selección de filtro. El NIOS lee los switches,
+ * decide el filtro y escribe filter_sel aquí. El conduit
+ * filter_sel (2 bits) va al módulo AudioFilter en el top-level.
+ *
+ * filter_sel:
+ *   0 = bypass, 1 = lowpass, 2 = highpass, 3 = bass boost
+ *
+ * NOTA: addressUnits = WORDS. address N -> offset byte N*4.
+ * ========================================================== */
+/* Offsets de registros */
+#define FILTER_CONTROL_OFFSET  0x00   /* R/W: bits[1:0] = filter_sel */
+#define FILTER_STATUS_OFFSET   0x04   /* R:   bits[1:0] = filter_sel actual */
+#define FILTER_ID_OFFSET       0x08   /* R:   0xA0F10001 (ID/debug) */
+/* Valores de selección de filtro */
+#define FILTER_SEL_BYPASS      0x0
+#define FILTER_SEL_LOWPASS     0x1
+#define FILTER_SEL_HIGHPASS    0x2
+#define FILTER_SEL_BASSBOOST   0x3
+/* ==========================================================
+ * Audio Sample Input (R_DSP - Noemi)
+ *
+ * FIFO de doble reloj. El NIOS escribe muestras PCM 16-bit que
+ * salen por el conduit hacia AudioFilter -> serializador -> codec.
+ *
+ * NOTA: addressUnits = WORDS. address N -> offset byte N*4.
+ * ========================================================== */
+/* Offsets de registros */
+#define SAMPLE_WRITE_OFFSET    0x00   /* W: bits[15:0] = muestra PCM signed 16-bit */
+#define SAMPLE_STATUS_OFFSET   0x04   /* R: flags de estado del FIFO (ver bits) */
+#define SAMPLE_CONTROL_OFFSET  0x08   /* R/W: bit 0 = enable */
+#define SAMPLE_ID_OFFSET       0x0C   /* R: 0xA5A10001 (ID/debug) */
+/* Bits del registro STATUS */
+#define SAMPLE_STATUS_FIFO_FULL    (1 << 0)
+#define SAMPLE_STATUS_FIFO_EMPTY   (1 << 1)
+#define SAMPLE_STATUS_READY_WR     (1 << 2)   /* listo para escribir */
+#define SAMPLE_STATUS_OVERFLOW     (1 << 3)
+#define SAMPLE_STATUS_UNDERFLOW    (1 << 4)
+/* bits [25:16] del STATUS = wrusedw (nivel de llenado aproximado) */
+#define SAMPLE_STATUS_WRUSEDW(x)   (((x) >> 16) & 0x3FF)
+/* Bits del registro CONTROL */
+#define SAMPLE_CTRL_ENABLE     (1 << 0)
+#define SAMPLE_CTRL_CLEAR      (1 << 1)   /* writedata[1]=1 limpia flags */
 /* ==========================================================
  * Offsets de registros - PIOs (Parallel I/O)
  * ========================================================== */
@@ -113,10 +158,14 @@
  *   REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0xFF);
  *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET);
  *
- *   uint32_t space = REG_READ(AUDIO_BASE, AUDIO_FIFOSPACE_OFFSET);
- *   if (AUDIO_FIFO_WSLC(space) > 0) {
- *       REG_WRITE(AUDIO_BASE, AUDIO_LEFTDATA_OFFSET,  sample_left);
- *       REG_WRITE(AUDIO_BASE, AUDIO_RIGHTDATA_OFFSET, sample_right);
+ *   // Seleccionar filtro según switches:
+ *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET) & 0x3;
+ *   REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, sw);
+ *
+ *   // Escribir una muestra al FIFO si hay espacio:
+ *   uint32_t st = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
+ *   if (!(st & SAMPLE_STATUS_FIFO_FULL)) {
+ *       REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra & 0xFFFF);
  *   }
  * ========================================================== */
 #define REG_WRITE(base, offset, value) \
