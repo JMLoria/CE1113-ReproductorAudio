@@ -33,7 +33,7 @@ typedef struct {
 
 static void sd_send_cmd(uint32_t cmd_index, uint32_t arg, uint32_t flags) {
     #ifdef QEMU_TEST
-        printf("[Mock Hardware] Enviando CMD%d | Argumento: 0x%08X\n", cmd_index, arg);
+        printf("[Mock Hardware] Enviando CMD%ld | Argumento: 0x%08lX\n", (unsigned long)cmd_index, (unsigned long)arg);
         // Simulamos que el hardware completó el comando (Bit 2 = Command Done)
         SDMMC->RINTSTS |= (1 << 2); 
     #else
@@ -86,7 +86,7 @@ void sd_read_block(uint32_t block_number, uint32_t* buffer) {
     sd_send_cmd(17, block_number, CMD_RESP_EXPECT);
 
     #ifdef QEMU_TEST
-        printf("\n[Mock Hardware] Transfiriendo sector %d al buffer...\n", block_number);
+        printf("\n[Mock Hardware] Transfiriendo sector %ld al buffer...\n", (unsigned long)block_number);
         // Simulamos la llegada de 512 bytes (128 words)
         for(int i = 0; i < 128; i++) {
             buffer[i] = 0xFAFAFAFA; // Dato crudo de prueba
