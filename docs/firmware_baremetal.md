@@ -19,7 +19,7 @@ El comportamiento secuencial del reproductor de audio está gobernado por una M�
 ### Diagrama de la Máquina de Estados
 El siguiente diagrama ilustra las transiciones provocadas por los pulsadores físicos (`KEY0` a `KEY3`) y las condiciones de seguridad automáticas:
 
-![Máquina de Estados Finitos (FSM)](Diagrama_FSM.png)
+![Máquina de Estados Finitos (FSM)](Diagrama_FSM_BM.png)
 
 ---
 
@@ -37,7 +37,7 @@ Para cumplir de manera estricta con la restricción **REQ-16 (No HAL)**, el sist
 ### Diagrama de Bloques Arquitectónico
 El flujo de datos e interrupciones desde las capas físicas de la FPGA hasta el bucle principal de la aplicación se estructura de la siguiente forma:
 
-![Arquitectura de Bloques de Software](Diagrama_Bloques.png)
+![Arquitectura de Bloques de Software](Diagrama_Bloques_BM.png)
 
 ---
 
