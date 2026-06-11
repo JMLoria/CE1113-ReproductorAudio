@@ -7,15 +7,13 @@
 # =============================================================================
 
 CC      = arm-none-eabi-gcc
-CFLAGS  = -mcpu=cortex-a9 -mfloat-abi=soft -g -O0 -Wall -ISD_Driver -Iwav_parser
-
-# Rutas de los archivos fuentes del proyecto
-SRCS    = main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c 
+CFLAGS  = -mcpu=cortex-a9 -mfloat-abi=soft -g -O0 -Wall -ISD_Driver -Iwav_parser -Iaudio_bridge
+SRCS    = main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c audio_bridge/audio_bridge.c 
 
 # Configuración para Simulación en QEMU
 QEMU_ELF     = reproductor_qemu.elf
 QEMU_CFLAGS  = $(CFLAGS) -DQEMU_TEST --specs=rdimon.specs
-QEMU_LDFLAGS = -lrdimon  # IMPORTANTE: Debe ir al final del comando del linker
+QEMU_LDFLAGS = -lrdimon  
 QEMU_CMD     = qemu-system-arm \
                -machine versatilepb \
                -cpu cortex-a9 \
@@ -37,9 +35,11 @@ REAL_CFLAGS = $(CFLAGS) --specs=nosys.specs
 
 real: $(SRCS)
 	$(CC) $(REAL_CFLAGS) $(SRCS) -o $(REAL_ELF)
-	@echo ">>> ELF para hardware real generado con éxito: $(REAL_ELF)"
+	arm-none-eabi-objcopy -O binary $(REAL_ELF) reproductor_hps.bin
+	@echo ">>> ELF generado: $(REAL_ELF)"
+	@echo ">>> Binario para tarjeta SD: reproductor_hps.bin"
 
 clean:
-	rm -f *.o *.elf SD_Driver/*.o wav_parser/*.o
+	rm -f *.o *.elf SD_Driver/*.o wav_parser/*.o audio_bridge/*.o
 
 .PHONY: qemu real clean

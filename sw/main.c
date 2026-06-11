@@ -1,56 +1,46 @@
 #include "sd_driver.h"
 #include "wav_parser.h"
+#include "audio_bridge.h"
 #include <stdio.h>
 #include <string.h>
 
-// Forzar la declaración del inicializador de semihosting para QEMU
 extern void initialise_monitor_handles(void);
 
-// Buffer global de intercambio (512 bytes / 128 words)
 uint32_t audio_buffer[128]; 
 
-/**
- * @brief Inyecta una cabecera WAV PCM válida y muestras de audio ficticias 
- * dentro de nuestro audio_buffer para probar el wav_parser en QEMU.
- */
 void simular_archivo_wav_en_sd(void) {
     uint8_t bloque_temporal[512] = {0};
     WavHeader h;
     
-    // Configurar metadatos del WAV (Estéreo, 44100 Hz, 16 bits por muestra)
     memcpy(h.chunk_id, "RIFF", 4);
-    h.chunk_size = 400044; // Datos simulados
+    h.chunk_size = 400044; 
     memcpy(h.format, "WAVE", 4);
     memcpy(h.subchunk1_id, "fmt ", 4);
     h.subchunk1_size = 16;
-    h.audio_format = 1;     // PCM lineal
-    h.num_channels = 2;     // Estéreo
-    h.sample_rate = 44100;  // 44.1 kHz
-    h.bits_per_sample = 16; // 16 bits
+    h.audio_format = 1;     
+    h.num_channels = 2;     
+    h.sample_rate = 44100;  
+    h.bits_per_sample = 16; 
     h.byte_rate = 44100 * 2 * (16 / 8);
     h.block_align = 2 * (16 / 8);
     memcpy(h.subchunk2_id, "data", 4);
-    h.subchunk2_size = 400000;
+    // Para no hacer la simulación infinita en QEMU, simulamos que el audio mide 4096 bytes (8 bloques de 512 bytes)
+    h.subchunk2_size = 4096; 
 
-    // Copiar el struct empaquetado al inicio del bloque temporal de bytes
     memcpy(bloque_temporal, &h, sizeof(WavHeader));
 
-    // Llenar el resto del bloque (offset 44 en adelante) con muestras de audio de prueba
-    // Empaquetado: Canal Izquierdo = 0xAAAA, Canal Derecho = 0xBBBB -> 0xBBBBAAAA
     for (int i = WAV_PCM_OFFSET; i < 512; i += 4) {
-        bloque_temporal[i]     = 0xAA; // Left Low
-        bloque_temporal[i + 1] = 0xAA; // Left High
-        bloque_temporal[i + 2] = 0xBB; // Right Low
-        bloque_temporal[i + 3] = 0xBB; // Right High
+        bloque_temporal[i]     = 0xAA; 
+        bloque_temporal[i + 1] = 0xAA; 
+        bloque_temporal[i + 2] = 0xBB; 
+        bloque_temporal[i + 3] = 0xBB; 
     }
 
-    // Sobrescribimos el audio_buffer general con nuestro WAV estructurado
     memcpy(audio_buffer, bloque_temporal, 512);
 }
 
 int main(void) {
     #ifdef QEMU_TEST
-    // Obligatorio para redirigir printf a la terminal de Linux mediante QEMU
     initialise_monitor_handles();
     printf("--- [MODO SIMULACIÓN: QEMU] ---\n");
     #else
@@ -59,44 +49,66 @@ int main(void) {
 
     printf("Iniciando Firmware del Reproductor de Audio...\n\n");
     
-    // 1. Inicializar el controlador SD de la placa
-    // En QEMU imprimirá los comandos simulados (CMD0, CMD8, etc.)
+    // 1. Inicializar el controlador SD
     sd_init();
 
-    // 2. Leer el sector 0 de la tarjeta SD
-    // En QEMU cargará por defecto datos basura (0xFAFAFAFA)
+    // 2. Leer el sector 0 (Donde reside el encabezado de la pista)
     sd_read_block(0, audio_buffer);
 
     #ifdef QEMU_TEST
-    // 3. Modificamos el buffer simulado para inyectar un WAV real y testear el parser
-    printf("\n[Test] Inyectando un encabezado de archivo WAV controlado en el buffer...\n");
     simular_archivo_wav_en_sd();
     #endif
 
-    // 4. Analizar el buffer usando nuestro parser de audio
+    // 3. Analizar el encabezado WAV
     printf("\nEjecutando el analizador de archivos WAV...\n");
     WavHeader pista_actual;
     WavStatus estado_parser = wav_parse_header((uint8_t*)audio_buffer, &pista_actual);
 
-    // 5. Validar los resultados del parser
     if (estado_parser == WAV_OK) {
-        printf("[\033[0;32mÉXITO\033[0m] Estructura WAV válida detectada en memoria.\n");
-        
-        // Imprimir metadatos extraídos por pantalla
+        printf("[\033[0;32mÉXITO\033[0m] Estructura WAV válida detectada.\n");
         wav_print_info(&pista_actual);
         
-        // Verificar que las muestras de datos de audio sigan bien alineadas después del header (Offset 44)
-        // 44 bytes equivalen exactamente al índice 11 de un arreglo de 32 bits (11 * 4 = 44 bytes)
-        printf("\n=== VERIFICACIÓN DE INTEGRIDAD DE AUDIO ===");
-        printf("\nMuestra en audio_buffer[11] (Offset 44): 0x%08lX", (unsigned long)audio_buffer[11]);
-        printf("\nMuestra en audio_buffer[12] (Offset 48): 0x%08lX\n", (unsigned long)audio_buffer[12]);
-        #ifdef QEMU_TEST
-        printf("Resultado Esperado:                    0xBBBBAAAA\n");
-        #endif
+        // 4. Inicializar puente de audio con la FPGA.
+        // audio_bridge_init() transmite CMD_TRACK_START + metadatos al NIOS.
+        // audio_bridge_play() envía CMD_PLAY para arrancar la reproducción.
+        printf("\n=== INICIANDO TRANSFERENCIA A LA FPGA ===\n");
+        audio_bridge_init(&pista_actual);
+        audio_bridge_play();
+
+        // 5. Calcular cuántos bloques de datos de audio debemos procesar
+        // Cada bloque de la SD tiene 512 bytes.
+        uint32_t bytes_de_audio = pista_actual.subchunk2_size;
+        uint32_t bloques_totales = bytes_de_audio / 512;
+        if (bytes_de_audio % 512 != 0) bloques_totales++; // Bloque fraccionario restante
+
+        printf("[Reproductor] Detectados %ld bloques de audio para reproducir.\n", (unsigned long)bloques_totales);
+
+        // Enviamos el primer bloque (Sector 0) que ya contiene el residuo inicial de datos de audio
+        printf("\n[Reproductor] Enviando Bloque Inicial (Sector 0)...\n");
+        audio_bridge_send_block(audio_buffer, 0);
+
+        // Bucle de reproducción: Lee secuencialmente de la SD y envía a la FPGA
+        // Empezamos en el sector 1 ya que el 0 ya fue transmitido
+        for (uint32_t bloque_actual = 1; bloque_actual <= bloques_totales; bloque_actual++) {
+            printf("[Reproductor] Procesando Bloque %ld/%ld (SD LBA: %ld)...\n", 
+                   (unsigned long)bloque_actual, (unsigned long)bloques_totales, (unsigned long)bloque_actual);
+            
+            // Leer siguiente bloque físico de la SD
+            sd_read_block(bloque_actual, audio_buffer);
+            
+            // Enviar datos al Nios a través de nuestro puente unificado
+            audio_bridge_send_block(audio_buffer, bloque_actual);
+        }
+
+        // Señalizar al NIOS que no vienen más bloques
+        audio_bridge_track_end();
+
+        printf("\n[\033[0;32mFIN\033[0m] Se han enviado todos los bloques. Canción finalizada con éxito.\n");
+
     } else {
-        printf("[\033[0;31mERROR\033[0m] El archivo en la SD no es un WAV PCM válido. Código de error: %d\n", estado_parser);
+        printf("[\033[0;31mERROR\033[0m] Archivo WAV inválido. Código: %d\n", estado_parser);
     }
     
-    printf("\nPrueba de integración completada de manera exitosa.\n");
+    printf("\nPrueba de ejecución en bucle completada.\n");
     return 0; 
 }
