@@ -4,7 +4,7 @@
  * Machine generated for CPU 'nios2' in SOPC Builder design 'soc_system'
  * SOPC Builder design path: C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
  *
- * Generated: Mon Jun 01 13:10:02 CST 2026
+ * Generated: Wed Jun 10 19:25:49 CST 2026
  */
 
 /*
@@ -68,7 +68,7 @@
 #define ALT_CPU_CPU_ID_SIZE 1
 #define ALT_CPU_CPU_ID_VALUE 0x00000000
 #define ALT_CPU_CPU_IMPLEMENTATION "tiny"
-#define ALT_CPU_DATA_ADDR_WIDTH 0x13
+#define ALT_CPU_DATA_ADDR_WIDTH 0x14
 #define ALT_CPU_DCACHE_LINE_SIZE 0
 #define ALT_CPU_DCACHE_LINE_SIZE_LOG2 0
 #define ALT_CPU_DCACHE_SIZE 0
@@ -105,7 +105,7 @@
 #define NIOS2_CPU_ID_SIZE 1
 #define NIOS2_CPU_ID_VALUE 0x00000000
 #define NIOS2_CPU_IMPLEMENTATION "tiny"
-#define NIOS2_DATA_ADDR_WIDTH 0x13
+#define NIOS2_DATA_ADDR_WIDTH 0x14
 #define NIOS2_DCACHE_LINE_SIZE 0
 #define NIOS2_DCACHE_LINE_SIZE_LOG2 0
 #define NIOS2_DCACHE_SIZE 0
@@ -133,12 +133,18 @@
  *
  */
 
+#define __ALTERA_AVALON_FIFO
 #define __ALTERA_AVALON_JTAG_UART
 #define __ALTERA_AVALON_ONCHIP_MEMORY2
 #define __ALTERA_AVALON_PIO
 #define __ALTERA_AVALON_SYSID_QSYS
 #define __ALTERA_AVALON_TIMER
 #define __ALTERA_NIOS2_GEN2
+#define __ALTERA_UP_AVALON_AUDIO
+#define __ALTERA_UP_AVALON_AUDIO_AND_VIDEO_CONFIG
+#define __ALTERA_UP_AVALON_VIDEO_CHARACTER_BUFFER_WITH_DMA
+#define __AUDIO_FILTER_CONTROL
+#define __AUDIO_SAMPLE_INPUT
 #define __HEX_DISPLAY_CONTROLLER
 
 
@@ -177,8 +183,8 @@
  */
 
 #define ALT_DEVICE_FAMILY "Cyclone V"
-#define ALT_ENHANCED_INTERRUPT_API_PRESENT
 #define ALT_IRQ_BASE NULL
+#define ALT_LEGACY_INTERRUPT_API_PRESENT
 #define ALT_LOG_PORT "/dev/null"
 #define ALT_LOG_PORT_BASE 0x0
 #define ALT_LOG_PORT_DEV null
@@ -208,6 +214,62 @@
 
 
 /*
+ * audio configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_audio altera_up_avalon_audio
+#define AUDIO_BASE 0x70000
+#define AUDIO_IRQ 4
+#define AUDIO_IRQ_INTERRUPT_CONTROLLER_ID 0
+#define AUDIO_NAME "/dev/audio"
+#define AUDIO_SPAN 16
+#define AUDIO_TYPE "altera_up_avalon_audio"
+
+
+/*
+ * audio_config configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_audio_config altera_up_avalon_audio_and_video_config
+#define AUDIO_CONFIG_BASE 0x72000
+#define AUDIO_CONFIG_IRQ -1
+#define AUDIO_CONFIG_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define AUDIO_CONFIG_NAME "/dev/audio_config"
+#define AUDIO_CONFIG_SPAN 16
+#define AUDIO_CONFIG_TYPE "altera_up_avalon_audio_and_video_config"
+
+
+/*
+ * audio_filter_control configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_audio_filter_control audio_filter_control
+#define AUDIO_FILTER_CONTROL_BASE 0x80000
+#define AUDIO_FILTER_CONTROL_IRQ -1
+#define AUDIO_FILTER_CONTROL_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define AUDIO_FILTER_CONTROL_NAME "/dev/audio_filter_control"
+#define AUDIO_FILTER_CONTROL_SPAN 16
+#define AUDIO_FILTER_CONTROL_TYPE "audio_filter_control"
+
+
+/*
+ * audio_sample_input configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_audio_sample_input audio_sample_input
+#define AUDIO_SAMPLE_INPUT_BASE 0x81000
+#define AUDIO_SAMPLE_INPUT_IRQ -1
+#define AUDIO_SAMPLE_INPUT_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define AUDIO_SAMPLE_INPUT_NAME "/dev/audio_sample_input"
+#define AUDIO_SAMPLE_INPUT_SPAN 16
+#define AUDIO_SAMPLE_INPUT_TYPE "audio_sample_input"
+
+
+/*
  * buttons_pio configuration
  *
  */
@@ -232,6 +294,98 @@
 #define BUTTONS_PIO_RESET_VALUE 0
 #define BUTTONS_PIO_SPAN 16
 #define BUTTONS_PIO_TYPE "altera_avalon_pio"
+
+
+/*
+ * char_buffer_avalon_char_buffer_slave configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_char_buffer_avalon_char_buffer_slave altera_up_avalon_video_character_buffer_with_dma
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_BASE 0x94000
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_IRQ -1
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_NAME "/dev/char_buffer_avalon_char_buffer_slave"
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_SPAN 8192
+#define CHAR_BUFFER_AVALON_CHAR_BUFFER_SLAVE_TYPE "altera_up_avalon_video_character_buffer_with_dma"
+
+
+/*
+ * char_buffer_avalon_char_control_slave configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_char_buffer_avalon_char_control_slave altera_up_avalon_video_character_buffer_with_dma
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_BASE 0x90000
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_IRQ -1
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_NAME "/dev/char_buffer_avalon_char_control_slave"
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_SPAN 8
+#define CHAR_BUFFER_AVALON_CHAR_CONTROL_SLAVE_TYPE "altera_up_avalon_video_character_buffer_with_dma"
+
+
+/*
+ * fifo_hps_nios_in_csr configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_fifo_hps_nios_in_csr altera_avalon_fifo
+#define FIFO_HPS_NIOS_IN_CSR_AVALONMM_AVALONMM_DATA_WIDTH 32
+#define FIFO_HPS_NIOS_IN_CSR_AVALONMM_AVALONST_DATA_WIDTH 32
+#define FIFO_HPS_NIOS_IN_CSR_BASE 0xa0020
+#define FIFO_HPS_NIOS_IN_CSR_BITS_PER_SYMBOL 16
+#define FIFO_HPS_NIOS_IN_CSR_CHANNEL_WIDTH 8
+#define FIFO_HPS_NIOS_IN_CSR_ERROR_WIDTH 8
+#define FIFO_HPS_NIOS_IN_CSR_FIFO_DEPTH 1024
+#define FIFO_HPS_NIOS_IN_CSR_IRQ -1
+#define FIFO_HPS_NIOS_IN_CSR_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define FIFO_HPS_NIOS_IN_CSR_NAME "/dev/fifo_hps_nios_in_csr"
+#define FIFO_HPS_NIOS_IN_CSR_SINGLE_CLOCK_MODE 1
+#define FIFO_HPS_NIOS_IN_CSR_SPAN 32
+#define FIFO_HPS_NIOS_IN_CSR_SYMBOLS_PER_BEAT 2
+#define FIFO_HPS_NIOS_IN_CSR_TYPE "altera_avalon_fifo"
+#define FIFO_HPS_NIOS_IN_CSR_USE_AVALONMM_READ_SLAVE 1
+#define FIFO_HPS_NIOS_IN_CSR_USE_AVALONMM_WRITE_SLAVE 1
+#define FIFO_HPS_NIOS_IN_CSR_USE_AVALONST_SINK 0
+#define FIFO_HPS_NIOS_IN_CSR_USE_AVALONST_SOURCE 0
+#define FIFO_HPS_NIOS_IN_CSR_USE_BACKPRESSURE 1
+#define FIFO_HPS_NIOS_IN_CSR_USE_IRQ 1
+#define FIFO_HPS_NIOS_IN_CSR_USE_PACKET 1
+#define FIFO_HPS_NIOS_IN_CSR_USE_READ_CONTROL 0
+#define FIFO_HPS_NIOS_IN_CSR_USE_REGISTER 0
+#define FIFO_HPS_NIOS_IN_CSR_USE_WRITE_CONTROL 1
+
+
+/*
+ * fifo_hps_nios_out configuration
+ *
+ */
+
+#define ALT_MODULE_CLASS_fifo_hps_nios_out altera_avalon_fifo
+#define FIFO_HPS_NIOS_OUT_AVALONMM_AVALONMM_DATA_WIDTH 32
+#define FIFO_HPS_NIOS_OUT_AVALONMM_AVALONST_DATA_WIDTH 32
+#define FIFO_HPS_NIOS_OUT_BASE 0xa0000
+#define FIFO_HPS_NIOS_OUT_BITS_PER_SYMBOL 16
+#define FIFO_HPS_NIOS_OUT_CHANNEL_WIDTH 8
+#define FIFO_HPS_NIOS_OUT_ERROR_WIDTH 8
+#define FIFO_HPS_NIOS_OUT_FIFO_DEPTH 1024
+#define FIFO_HPS_NIOS_OUT_IRQ -1
+#define FIFO_HPS_NIOS_OUT_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define FIFO_HPS_NIOS_OUT_NAME "/dev/fifo_hps_nios_out"
+#define FIFO_HPS_NIOS_OUT_SINGLE_CLOCK_MODE 1
+#define FIFO_HPS_NIOS_OUT_SPAN 4
+#define FIFO_HPS_NIOS_OUT_SYMBOLS_PER_BEAT 2
+#define FIFO_HPS_NIOS_OUT_TYPE "altera_avalon_fifo"
+#define FIFO_HPS_NIOS_OUT_USE_AVALONMM_READ_SLAVE 1
+#define FIFO_HPS_NIOS_OUT_USE_AVALONMM_WRITE_SLAVE 1
+#define FIFO_HPS_NIOS_OUT_USE_AVALONST_SINK 0
+#define FIFO_HPS_NIOS_OUT_USE_AVALONST_SOURCE 0
+#define FIFO_HPS_NIOS_OUT_USE_BACKPRESSURE 1
+#define FIFO_HPS_NIOS_OUT_USE_IRQ 1
+#define FIFO_HPS_NIOS_OUT_USE_PACKET 1
+#define FIFO_HPS_NIOS_OUT_USE_READ_CONTROL 0
+#define FIFO_HPS_NIOS_OUT_USE_REGISTER 0
+#define FIFO_HPS_NIOS_OUT_USE_WRITE_CONTROL 1
 
 
 /*
@@ -343,7 +497,7 @@
 #define SYSID_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define SYSID_NAME "/dev/sysid"
 #define SYSID_SPAN 8
-#define SYSID_TIMESTAMP 1780331008
+#define SYSID_TIMESTAMP 1781134014
 #define SYSID_TYPE "altera_avalon_sysid_qsys"
 
 

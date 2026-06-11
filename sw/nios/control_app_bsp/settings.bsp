@@ -2,10 +2,10 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>01/06/2026 01:09:59 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1780340999767</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>10/06/2026 07:25:45 PM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1781141145137</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\TEC\CE1113-SistemasEmpotrados\CE1113-ReproductorAudio\sw\nios\control_app_bsp</BspGeneratedLocation>
-        <BspSettingsFile>.\settings.bsp</BspSettingsFile>
+        <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>C:\TEC\CE1113-SistemasEmpotrados\CE1113-ReproductorAudio\hw\soc_system.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>nios2</Cpu>
@@ -944,6 +944,54 @@
                 <slaveDescriptor>hex_display</slaveDescriptor>
                 <addressRange>0x00060000 - 0x0006000F</addressRange>
                 <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>audio</slaveDescriptor>
+                <addressRange>0x00070000 - 0x0007000F</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>audio_config</slaveDescriptor>
+                <addressRange>0x00072000 - 0x0007200F</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>audio_filter_control</slaveDescriptor>
+                <addressRange>0x00080000 - 0x0008000F</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>audio_sample_input</slaveDescriptor>
+                <addressRange>0x00081000 - 0x0008100F</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>char_buffer_avalon_char_control_slave</slaveDescriptor>
+                <addressRange>0x00090000 - 0x00090007</addressRange>
+                <addressSpan>8</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>char_buffer_avalon_char_buffer_slave</slaveDescriptor>
+                <addressRange>0x00094000 - 0x00095FFF</addressRange>
+                <addressSpan>8192</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>fifo_hps_nios_out</slaveDescriptor>
+                <addressRange>0x000A0000 - 0x000A0003</addressRange>
+                <addressSpan>4</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>fifo_hps_nios_in_csr</slaveDescriptor>
+                <addressRange>0x000A0020 - 0x000A003F</addressRange>
+                <addressSpan>32</addressSpan>
                 <attributes/>
         </MemoryMap>
         <LinkerSection>

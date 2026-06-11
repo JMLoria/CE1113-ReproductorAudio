@@ -153,7 +153,7 @@ void procesar_streaming_audio(void) {
 				uint32_t muestra_ipc = REG_READ(FIFO_OUT_BASE, 0x00);
 
 				// 5. ESCRIBIR: Enviar los 16 bits bajos a la IP de audio
-				REG_WIRTE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra_ipc & 0xFFFF);
+				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra_ipc & 0xFFFF);
 			}
 		}
 	}

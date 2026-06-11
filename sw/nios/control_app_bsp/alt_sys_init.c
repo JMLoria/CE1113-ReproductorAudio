@@ -4,7 +4,7 @@
  * Machine generated for CPU 'nios2' in SOPC Builder design 'soc_system'
  * SOPC Builder design path: C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
  *
- * Generated: Mon Jun 01 13:10:02 CST 2026
+ * Generated: Wed Jun 10 19:25:49 CST 2026
  */
 
 /*
@@ -59,18 +59,26 @@
  */
 
 #include "altera_nios2_gen2_irq.h"
+#include "altera_avalon_fifo.h"
 #include "altera_avalon_jtag_uart.h"
 #include "altera_avalon_sysid_qsys.h"
 #include "altera_avalon_timer.h"
+#include "altera_up_avalon_audio.h"
+#include "altera_up_avalon_audio_and_video_config.h"
+#include "altera_up_avalon_video_character_buffer_with_dma.h"
 
 /*
  * Allocate the device storage
  */
 
 ALTERA_NIOS2_GEN2_IRQ_INSTANCE ( NIOS2, nios2);
+ALTERA_AVALON_FIFO_INSTANCE ( FIFO_HPS_NIOS, fifo_hps_nios);
 ALTERA_AVALON_JTAG_UART_INSTANCE ( JTAG_UART, jtag_uart);
 ALTERA_AVALON_SYSID_QSYS_INSTANCE ( SYSID, sysid);
 ALTERA_AVALON_TIMER_INSTANCE ( TIMER, timer);
+ALTERA_UP_AVALON_AUDIO_AND_VIDEO_CONFIG_INSTANCE ( AUDIO_CONFIG, audio_config);
+ALTERA_UP_AVALON_AUDIO_INSTANCE ( AUDIO, audio);
+ALTERA_UP_AVALON_VIDEO_CHARACTER_BUFFER_WITH_DMA_INSTANCE ( CHAR_BUFFER, char_buffer);
 
 /*
  * Initialize the interrupt controller devices
@@ -94,6 +102,10 @@ void alt_irq_init ( const void* base )
 void alt_sys_init( void )
 {
     ALTERA_AVALON_TIMER_INIT ( TIMER, timer);
+    ALTERA_AVALON_FIFO_INIT ( FIFO_HPS_NIOS, fifo_hps_nios);
     ALTERA_AVALON_JTAG_UART_INIT ( JTAG_UART, jtag_uart);
     ALTERA_AVALON_SYSID_QSYS_INIT ( SYSID, sysid);
+    ALTERA_UP_AVALON_AUDIO_AND_VIDEO_CONFIG_INIT ( AUDIO_CONFIG, audio_config);
+    ALTERA_UP_AVALON_AUDIO_INIT ( AUDIO, audio);
+    ALTERA_UP_AVALON_VIDEO_CHARACTER_BUFFER_WITH_DMA_INIT ( CHAR_BUFFER, char_buffer);
 }
