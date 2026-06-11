@@ -18,10 +18,10 @@ El proyecto consiste en el co-diseño hardware/software de un SoC avanzado para 
 
 | Código | Rol | Responsable | Responsabilidades |
 | :--- | :--- | :--- | :--- |
-| R_SoC | Hardware SoC |  | Diseño en Platform Designer, configuración del HPS, integración del bus Avalon y control de displays 7-seg. |
-| R_DSP | Hardware DSP |  | Diseño de los 3 filtros digitales en RTL (VHDL/Verilog), gestión del IP de Audio y aceleración de hardware. |
-| R_Level | Software Low-Level |  | Desarrollo del driver de la SD (SPI/SDIO), sistema de archivos Bare Metal y parseo de metadatos WAV. |
-| R_Control | Software de Control |  | Gestión de interrupciones, lógica de la máquina de estados de reproducción, control temporal y coordinación de UI. |
+| R_SoC | Hardware SoC | Jose Solano  | Diseño en Platform Designer, configuración del HPS, integración del bus Avalon y control de displays 7-seg. |
+| R_DSP | Hardware DSP | Noemi Vargas | Diseño de los 3 filtros digitales en RTL (VHDL/Verilog), gestión del IP de Audio y aceleración de hardware. |
+| R_Level | Software Low-Level | Roy Chavarria | Desarrollo del driver de la SD (SPI/SDIO), sistema de archivos Bare Metal y parseo de metadatos WAV. |
+| R_Control | Software de Control | Jose Loria | Gestión de interrupciones, lógica de la máquina de estados de reproducción, control temporal y coordinación de UI. |
 
 ## 4. Matriz de Requerimientos
 
@@ -32,17 +32,18 @@ El proyecto consiste en el co-diseño hardware/software de un SoC avanzado para 
 | **REQ-03** | Usuario | Selección de filtros | Aplicación en tiempo real de Filtro 1, Filtro 2 o Filtro 3 mediante el uso de switches físicos. | **R_DSP** |
 | **REQ-04** | Funcional | Módulo HW Personalizado | Diseño de un componente con registros de control, estado y datos mapeados a memoria mediante bus Avalon-MM. | **R_SoC** |
 | **REQ-05** | Funcional | Procesamiento DSP | Implementación de filtros digitales directamente en la lógica de la FPGA para procesamiento en tiempo real. | **R_DSP** |
-| **REQ-06** | Funcional | Interfaz de Audio | El manejo del flujo de audio debe ser realizado exclusivamente por la FPGA mediante un IP dedicado en Platform Designer. | **R_DSP** |
-| **REQ-07** | Funcional | Driver SD Bare Metal | Implementación del control de almacenamiento (SD) y acceso a archivos sin el uso de bibliotecas de abstracción (HAL). | **R_Level** |
-| **REQ-08** | Funcional | Parseo de Metadatos | Extracción manual del título, artista, álbum y duración total desde la estructura del archivo de audio. | **R_Level** |
-| **REQ-09** | Funcional | Visualización UI | Visualización de metadatos y estado de filtros en una interfaz externa (VGA/LCD/TFT) controlada por hardware o software. | **R_SoC** |
-| **REQ-10** | Funcional | Control Temporal | Manejo del tiempo transcurrido (MM:SS) mostrado en displays de 7 segmentos de la tarjeta DE-SoC1. | **R_Control** |
-| **REQ-11** | Funcional | Gestión de Control | Lógica de reproducción (Play, Pausa, Stop) operada mediante interrupciones para los botones de la tarjeta. | **R_Control** |
-| **REQ-12** | No Funcional | Tiempo de Inicio | El sistema debe estar completamente operativo en un tiempo menor a 10 segundos tras el reset. | **R_SoC** |
-| **REQ-13** | No Funcional | Latencia de Control | Tiempo de respuesta a las interrupciones de botones debe ser inferior a 200ms. | **R_Control** |
-| **REQ-14** | No Funcional | Latencia de Filtro | El cambio entre filtros digitales debe realizarse con una latencia imperceptible inferior a 100ms. | **R_DSP** |
-| **REQ-15** | No Funcional | Estabilidad | Reproducción continua sin distorsiones audibles en modo bypass, ni reinicios inesperados del sistema. | **R_DSP / R_Control** |
-| **REQ-16** | Restricción | Desarrollo Bare Metal | Programación de bajo nivel utilizando punteros directos a memoria, evitando métodos previstos en el HAL. | **R_Level / R_Contr** |
+| **REQ-06** | Funcional | Interfaz de Audio | El manejo del flujo de audio hacia el Codec debe ser realizado exclusivamente por la FPGA mediante un IP dedicado en Platform Designer. | **R_DSP** |
+| **REQ-07** | Funcional | Control de Almacenamiento | Implementación del control de lectura de la tarjeta SD a través del controlador nativo de hardware en el ARM (HPS). | **R_Level** |
+| **REQ-08** | Funcional | Parseo de Metadatos | Extracción manual (en el ARM HPS) del título, artista, álbum y duración total desde la estructura del archivo WAV. | **R_Level** |
+| **REQ-09** | Funcional | Visualización UI | Visualización de metadatos y estado de filtros en una interfaz externa (VGA/LCD/TFT) conectada a la FPGA. | **R_SoC** |
+| **REQ-10** | Funcional | Control Temporal | Manejo del tiempo transcurrido (MM:SS) mediante software Bare Metal en el NIOS II, actualizando los registros físicos del hardware. | **R_Control** |
+| **REQ-11** | Funcional | Gestión de Control | Lógica de reproducción (Play, Pausa, Stop) operada mediante rutinas de interrupción (ISR) para los botones físicos en el NIOS II. | **R_Control** |
+| **REQ-12** | No Funcional | Tiempo de Inicio | El sistema completo (subida de Linux en HPS y firmware en NIOS II) debe estar operativo en un tiempo menor a 10 segundos. | **R_SoC** |
+| **REQ-13** | No Funcional | Latencia de Control | Tiempo de respuesta del NIOS II ante las interrupciones de los botones físicos debe ser inferior a 200ms. | **R_Control** |
+| **REQ-14** | No Funcional | Latencia de Filtro | El cambio dinámico entre filtros digitales en la FPGA debe realizarse con una latencia imperceptible inferior a 100ms. | **R_DSP** |
+| **REQ-15** | No Funcional | Estabilidad | Reproducción continua sin distorsiones audibles por vaciado de buffers, ni bloqueos o descalces en la comunicación entre procesadores. | **R_DSP / R_Control** |
+| **REQ-16** | Restricción | Desarrollo Bare Metal | Programación de bajo nivel en el NIOS II utilizando punteros directos a memoria mapeada, evitando métodos previstos en el HAL. | **R_Control** |
+| **REQ-17** | Funcional | Comunicación IPC | Implementación de un canal de comunicación inter-procesador (Dual-Port RAM o FIFO) en hardware para transferir datos de audio de ARM a NIOS II. | **R_SoC** |
 
 ## 5 Cronogroma de Proyecto
 
