@@ -137,6 +137,28 @@ void inicializar_timer_1s(void) {
 	NIOS2_WRITE_CTL_REG(NIOS2_CTL_IENABLE, ienable_actual);
 }
 
+// Lee una muestra de la FIFO IPC y la transfiere a la IP de entrada de audio
+void procesar_streaming_audio(void) {	
+	// 1. el streaming de datos fisicos solo oecurre si el reproductor esta en PLAY
+	if (estado_actual == STATE_PLAY) {
+		// 2. Verificar si la FIFO de comunicacion tiene muestrar disponibles 
+		uint32_t muestras_disponibles = REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG);
+
+		if (muestras_disponibles > 0) {
+			// 3. Verificar si el FIFO de entrada de audio tiene espacio
+			uint32_t dsp_status = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
+
+			if (!dsp_status & SAMPLE_STATUS_FIFO_FULL) {
+				// 4. LEER: Extraer la muestra de 32 bits de la FIFO IPC
+				uint32_t muestra_ipc = REG_READ(FIFO_OUT_BASE, 0x00);
+
+				// 5. ESCRIBIR: Enviar los 16 bits bajos a la IP de audio
+				REG_WIRTE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra_ipc & 0xFFFF);
+			}
+		}
+	}
+}
+
 void actualizar_interfaz_visual(void) {
 	// Asegurar que el display este habilitado y configurado en MODO TIEMPO (MM:SS)
 	// Escribe en el registro de CONTROL del modulo personalizado
@@ -239,13 +261,12 @@ int main(void) {
 				tiempo_segundos = 0;
 				minutos = 0;
 				segundos = 0;
-				cancion_actual++;
-				if (cancion_actual > TOTAL_CANCIONES) {
-					cancion_actual = 1;
-				}
+				cancion_actual = (cancion_actual % TOTAL_CANCIONES) + 1;
 				actualizar_interfaz_visual();
 			}
 		}
+
+		procesar_streaming_audio();
 	}
 
 	return 0;
