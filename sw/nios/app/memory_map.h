@@ -27,6 +27,8 @@
 #define AUDIO_SAMPLE_INPUT_BASE    0x00081000U  /* FIFO de muestras (R_DSP) */
 #define CHAR_CTRL_BASE        0x00090000U   /* VGA: control char buffer */
 #define CHAR_BUFFER_BASE      0x00094000U   /* VGA: buffer de caracteres 80x60 */
+#define FIFO_OUT_BASE         0x000A0000U   /* IPC: NIOS lee del FIFO */
+#define FIFO_OUT_CSR_BASE     0x000A0020U   /* IPC: status del FIFO */
 /* ==========================================================
  * IRQs del NIOS II
  * ========================================================== */
@@ -148,6 +150,39 @@
  * Con la config por defecto normalmente no se necesita tocar. */
 #define CHAR_CTRL_RESOLUTION_OFFSET  0x00
 /* ==========================================================
+ * FIFO IPC HPS <-> NIOS (REQ-17)
+ *
+ * Avalon FIFO Memory para compartir el stream de audio entre
+ * el HPS (ARM, productor) y el NIOS II (consumidor).
+ *
+ *   HPS escribe muestras  ->  FIFO  ->  NIOS las lee
+ *
+ * Profundidad 1024, ancho 32-bit, single clock.
+ *
+ * NOTA: el HPS ve estas interfaces a través del Lightweight
+ * HPS-to-FPGA bridge (base física 0xFF200000). Ver docs/ipc_fifo.md
+ * para las direcciones y el uso del lado HPS.
+ * ========================================================== */
+/* Offsets de los registros del CSR (control/status slave del FIFO) */
+#define FIFO_LEVEL_REG        0x00   /* número de palabras en el FIFO */
+#define FIFO_STATUS_REG       0x04   /* flags de estado (ver máscaras) */
+#define FIFO_EVENT_REG        0x08   /* eventos IRQ (write-1-to-clear) */
+#define FIFO_IENABLE_REG      0x0C   /* habilitación de interrupciones */
+#define FIFO_ALMOSTFULL_REG   0x10   /* umbral almost-full */
+#define FIFO_ALMOSTEMPTY_REG  0x14   /* umbral almost-empty */
+/* Máscaras del registro STATUS / EVENT */
+#define FIFO_STATUS_FULL      0x01   /* FIFO lleno */
+#define FIFO_STATUS_EMPTY     0x02   /* FIFO vacío */
+#define FIFO_STATUS_AF        0x04   /* almost full */
+#define FIFO_STATUS_AE        0x08   /* almost empty */
+#define FIFO_STATUS_OVF       0x10   /* overflow */
+#define FIFO_STATUS_UDF       0x20   /* underflow */
+/* Vista HPS / ARM (a través del Lightweight bridge, base 0xFF200000).
+ * Verificar el offset del in_csr al generar hps_0.h con el SoC EDS. */
+#define HPS_LW_BRIDGE_BASE    0xFF200000U
+#define FIFO_IN_HPS           (HPS_LW_BRIDGE_BASE + 0x00000U)  /* HPS escribe muestras */
+#define FIFO_IN_CSR_HPS       (HPS_LW_BRIDGE_BASE + 0xA0020U)  /* HPS lee status */
+/* ==========================================================
  * Offsets de registros - PIOs (Parallel I/O)
  * ========================================================== */
 #define PIO_DATA_OFFSET       0x00
@@ -185,10 +220,15 @@
  *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET) & 0x3;
  *   REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, sw);
  *
- *   // Escribir una muestra al FIFO si hay espacio:
+ *   // Escribir una muestra al Audio Sample Input si hay espacio:
  *   uint32_t st = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
  *   if (!(st & SAMPLE_STATUS_FIFO_FULL)) {
  *       REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra & 0xFFFF);
+ *   }
+ *
+ *   // Leer una muestra del FIFO IPC (HPS->NIOS) si hay datos:
+ *   if (REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0) {
+ *       uint32_t muestra = REG_READ(FIFO_OUT_BASE, 0x00);
  *   }
  *
  *   // Escribir un carácter en VGA en la posición (x, y):
