@@ -39,7 +39,17 @@ real: $(SRCS)
 	@echo ">>> ELF generado: $(REAL_ELF)"
 	@echo ">>> Binario para tarjeta SD: reproductor_hps.bin"
 
-clean:
-	rm -f *.o *.elf SD_Driver/*.o wav_parser/*.o audio_bridge/*.o
+# Prueba aislada del driver SD (sin FPGA, sin audio_bridge)
+SD_TEST_ELF    = sd_test_hps.elf
+SD_TEST_SRCS   = sd_test_main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c
+SD_TEST_CFLAGS = $(CFLAGS) --specs=nosys.specs -DSD_TEST_ONLY
 
-.PHONY: qemu real clean
+sd_test: $(SD_TEST_SRCS)
+	$(CC) $(SD_TEST_CFLAGS) $(SD_TEST_SRCS) -o $(SD_TEST_ELF)
+	arm-none-eabi-objcopy -O binary $(SD_TEST_ELF) sd_test_hps.bin
+	@echo ">>> Binario de prueba SD: sd_test_hps.bin"
+	
+clean:
+	rm -f *.o *.elf *.bin SD_Driver/*.o wav_parser/*.o audio_bridge/*.o
+
+.PHONY: qemu real clean sd_test
