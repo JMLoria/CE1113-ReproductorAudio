@@ -148,7 +148,7 @@ void procesar_streaming_audio(void) {
 			// 3. Verificar si el FIFO de entrada de audio tiene espacio
 			uint32_t dsp_status = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
 
-			if (!dsp_status & SAMPLE_STATUS_FIFO_FULL) {
+			if (!(dsp_status & SAMPLE_STATUS_FIFO_FULL)) {
 				// 4. LEER: Extraer la muestra de 32 bits de la FIFO IPC
 				uint32_t muestra_ipc = REG_READ(FIFO_OUT_BASE, 0x00);
 
