@@ -88,8 +88,25 @@ fat_test: $(FAT_SRCS) $(BARE_LD)
 	@echo ">>> Prueba FAT32 lista: $(FAT_BIN)  (entry 0x00100000)"
 	@echo ">>> En U-Boot:  fatload mmc 0:1 0x00100000 $(FAT_BIN); go 0x00100000"
 
+# ---------------------------------------------------------------------------
+# REPRODUCTOR COMPLETO (app bare-metal del HPS): SD -> FAT32 -> WAV -> FIFO IPC.
+# Es la app que se carga en la placa para el sistema integrado con la FPGA.
+# ---------------------------------------------------------------------------
+PLAYER_ELF   = reproductor_bare.elf
+PLAYER_BIN   = reproductor_bare.bin
+PLAYER_SRCS  = startup/crt0.S bsp/hps_uart.c bsp/syscalls.c \
+               player_main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c \
+               fat32/fat32.c audio_bridge/audio_bridge.c
+PLAYER_CFLAGS = $(BARE_CFLAGS) -Ifat32 -Iaudio_bridge
+
+player: $(PLAYER_SRCS) $(BARE_LD)
+	$(BARE_CC) $(PLAYER_CFLAGS) $(BARE_LDFLAGS) $(PLAYER_SRCS) -o $(PLAYER_ELF) -lc -lgcc
+	$(BARE_OBJCOPY) -O binary $(PLAYER_ELF) $(PLAYER_BIN)
+	@echo ">>> Reproductor completo: $(PLAYER_BIN)  (entry 0x00100000)"
+	@echo ">>> En U-Boot:  fatload mmc 0:1 0x00100000 $(PLAYER_BIN); go 0x00100000"
+
 clean:
 	rm -f *.o *.elf *.bin SD_Driver/*.o wav_parser/*.o audio_bridge/*.o \
 	      startup/*.o bsp/*.o fat32/*.o
 
-.PHONY: qemu real clean sd_test bare fat_test
+.PHONY: qemu real clean sd_test bare fat_test player
