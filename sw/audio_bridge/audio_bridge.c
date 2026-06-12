@@ -126,3 +126,30 @@ void audio_bridge_pause(void) {
     printf("[Audio Bridge] CMD_PAUSE enviado.\n");
 #endif
 }
+
+/* Envia un campo de texto como TRACK_TEXT_FIELD_WORDS palabras little-endian,
+ * rellenado con ceros hasta TRACK_TEXT_FIELD_BYTES. */
+static void send_text_field(const char* s) {
+    char field[TRACK_TEXT_FIELD_BYTES];
+    int i = 0;
+    while (i < TRACK_TEXT_FIELD_BYTES && s[i] != '\0') { field[i] = s[i]; i++; }
+    while (i < TRACK_TEXT_FIELD_BYTES) { field[i] = 0; i++; }
+
+    for (int w = 0; w < TRACK_TEXT_FIELD_WORDS; w++) {
+        uint32_t word =  (uint32_t)(uint8_t)field[w * 4 + 0]
+                      | ((uint32_t)(uint8_t)field[w * 4 + 1] << 8)
+                      | ((uint32_t)(uint8_t)field[w * 4 + 2] << 16)
+                      | ((uint32_t)(uint8_t)field[w * 4 + 3] << 24);
+        fifo_write_word(word);
+    }
+}
+
+void audio_bridge_send_text(const char* title, const char* artist) {
+    fifo_write_word(CMD_BUILD(CMD_TRACK_TEXT, TRACK_TEXT_WORDS));
+    send_text_field(title);
+    send_text_field(artist);
+
+#ifdef QEMU_TEST
+    printf("[Audio Bridge] CMD_TRACK_TEXT: \"%s\" / \"%s\"\n", title, artist);
+#endif
+}

@@ -102,3 +102,28 @@ RemoteSystemsTempFiles/
 # Reportes y logs del enlazador/compilador de software
 *.bak
 *.log
+
+# ==========================================
+# Preloader / U-Boot (generado por SoC EDS: miles de archivos, regenerable)
+# ==========================================
+/sw/preloader/
+
+# ==========================================
+# Apps bare-metal del HPS (binarios generados) y script de arranque compilado
+# ==========================================
+/sw/*.bin
+/sw/*.srec
+u-boot.scr
+
+# Mantener en el repo los fuentes de scripts aunque *.txt esté ignorado arriba
+!hw/scripts/boot.txt
+
+# ==========================================
+# Canciones (binarios grandes; van a la SD, NO al repo)
+# ==========================================
+/songs/
+*.mp4
+*.wav
+*.WAV
+*.mp3
+*.flac

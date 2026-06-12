@@ -40,7 +40,18 @@ bsp-create-settings \
     --settings      "$BSP_DIR/settings.bsp"
 
 echo ">>> [2/2] Compilando preloader..."
-make -C "$BSP_DIR"
+# Asegurar que se use el 'tar' de Cygwin de SoC EDS y NO el de Windows
+# (C:\Windows\System32\tar.exe), que no entiende rutas /cygdrive/... y rompe el
+# untar de u-boot ("Error opening archive: Failed to open ...").
+if [ -n "$SOCEDS_DEST_ROOT" ]; then
+    CYGBIN="$(cygpath -u "$SOCEDS_DEST_ROOT" 2>/dev/null || echo "$SOCEDS_DEST_ROOT")/host_tools/cygwin/bin"
+    [ -d "$CYGBIN" ] && export PATH="$CYGBIN:$PATH"
+fi
+
+# OJO: el 'make' de SoC EDS es nativo de Windows y no entiende rutas Cygwin
+# (/cygdrive/c/...). Por eso hay que 'cd' al directorio (el cd del shell sí las
+# resuelve) y correr make ahí, en vez de 'make -C <ruta-cygwin>'.
+( cd "$BSP_DIR" && make )
 
 echo ""
 echo ">>> Listo:"

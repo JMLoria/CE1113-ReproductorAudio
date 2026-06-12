@@ -34,6 +34,7 @@
 #define CMD_TRACK_END       0xC0000000U
 #define CMD_PLAY            0xD0000000U
 #define CMD_PAUSE           0xE0000000U
+#define CMD_TRACK_TEXT      0xF0000000U   /* metadatos de texto (titulo + artista) */
 
 /* Macros para construir / decodificar palabras de control */
 #define CMD_BUILD(opcode, payload)  ((opcode) | ((payload) & 0x00FFFFFFU))
@@ -112,5 +113,30 @@ void audio_bridge_play(void);
  * @brief Envía CMD_PAUSE al NIOS (congela la máquina de estados de reproducción).
  */
 void audio_bridge_pause(void);
+
+/* ==========================================================================
+ * Paquete de texto (CMD_TRACK_TEXT)
+ *
+ * Después de la palabra CMD_TRACK_TEXT (con payload = TRACK_TEXT_WORDS) se
+ * envían DOS campos de texto de longitud fija, cada uno de
+ * TRACK_TEXT_FIELD_WORDS palabras (TRACK_TEXT_FIELD_BYTES bytes), en orden
+ * little-endian y rellenados con ceros:
+ *     1) titulo   (INAM del WAV)
+ *     2) artista  (IART del WAV)
+ *
+ * Decodificación en el NIOS: al ver CMD_TRACK_TEXT, leer TRACK_TEXT_WORDS
+ * palabras; las primeras TRACK_TEXT_FIELD_WORDS son el titulo y las siguientes
+ * el artista. Cada palabra trae 4 bytes (byte 0 en los bits [7:0], etc.).
+ * Como van rellenados con ceros, cada campo queda nul-terminado.
+ * ========================================================================== */
+#define TRACK_TEXT_FIELD_BYTES  48
+#define TRACK_TEXT_FIELD_WORDS  12               /* 48 / 4 */
+#define TRACK_TEXT_WORDS        (2 * TRACK_TEXT_FIELD_WORDS)
+
+/**
+ * @brief Envía los metadatos de texto (titulo + artista) al NIOS.
+ * Llamar una vez por pista, junto con audio_bridge_init().
+ */
+void audio_bridge_send_text(const char* title, const char* artist);
 
 #endif /* AUDIO_BRIDGE_H */

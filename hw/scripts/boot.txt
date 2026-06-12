@@ -1,0 +1,9 @@
+# Script de arranque de U-Boot para el reproductor bare-metal.
+# Se compila a u-boot.scr con:
+#   mkimage -A arm -T script -C none -d boot.txt u-boot.scr
+# y se copia a la particion FAT de la SD.
+#
+# Carga la app del HPS desde la FAT y salta a ella (entry 0x00100000).
+echo "== Reproductor de Audio: cargando app del HPS =="
+fatload mmc 0:1 0x00100000 reproductor_bare.bin
+go 0x00100000

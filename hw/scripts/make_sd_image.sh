@@ -19,7 +19,7 @@
 #        --uboot     sw/preloader/uboot-socfpga/u-boot.img \
 #        --app       sw/reproductor_bare.bin \
 #        --scr       hw/scripts/u-boot.scr \
-#        --songs     ./canciones \
+#        --songs     ./songs \
 #        --out       sdcard.img
 # =============================================================================
 set -e

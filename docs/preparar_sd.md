@@ -59,7 +59,7 @@ hw/scripts/make_sd_image.sh \
     --uboot     sw/preloader/uboot-socfpga/u-boot.img \
     --app       sw/reproductor_bare.bin \
     --scr       hw/scripts/u-boot.scr \
-    --songs     ./canciones \
+    --songs     ./songs \
     --out       sdcard.img
 ```
 
@@ -67,18 +67,53 @@ Genera `sdcard.img` con todo adentro (particiones, preloader, U-Boot, app y
 canciones). Grabalo con **RPi Imager** ("Use custom" → `sdcard.img`),
 balenaEtcher o `dd`. Listo: una imagen, un flasheo.
 
-### Método B — Directo en Windows (SoC EDS)
+### Método B — 100% en Windows (sin Linux)
 
-1. **Crear la partición A2.** Windows no crea particiones tipo `0xA2`; usá una
-   máquina Linux/WSL una sola vez: `fdisk /dev/sdX` → partición 1 FAT32 (tipo
-   `c`) + partición 3 tipo `a2`; luego `mkfs.vfat -F32 /dev/sdX1`.
-2. **Grabar el preloader** (y U-Boot) en la A2, desde el SoC EDS Command Shell:
-   ```sh
-   alt-boot-disk-util -a write -p preloader-mkpimage.bin -b u-boot.img -d <unidad>
-   ```
-   (`<unidad>` = letra de la SD en Windows, ej. `E`.)
-3. **Copiar a la FAT** (arrastrar en el Explorador): `reproductor_bare.bin`,
-   `u-boot.scr` y las canciones `*.WAV`.
+Solo necesitás `diskpart` (viene con Windows) y el **SoC EDS Command Shell**.
+Todos los comandos asumen que estás **parado en la raíz del repo**.
+
+**B.1 — Crear las particiones con `diskpart`.** Abrí un **Símbolo del sistema
+como Administrador** y ejecutá `diskpart`. Dentro de diskpart:
+
+```
+list disk
+select disk N                       REM  N = numero de la SD. ¡VERIFICALO por el tamaño!
+clean                               REM  borra TODA la SD
+create partition primary size=2000  REM  FAT32 (datos); ajusta el tamano a tus canciones
+select partition 1
+format fs=fat32 quick label=AUDIO
+assign letter=F                     REM  letra para la FAT
+create partition primary size=1     REM  particion del preloader
+select partition 2
+set id=a2                           REM  tipo "Altera boot" (0xA2)
+exit
+```
+
+> ⚠️ `clean` borra el disco entero. Confirmá con `list disk` que `N` es la SD
+> (por el tamaño), **no** tu disco de Windows. La FAT queda como **partición 1**
+> (importante: `fatload mmc 0:1` la busca ahí); la A2 como partición 2, sin letra
+> (es normal, es cruda).
+
+**B.2 — Grabar el preloader + U-Boot en la partición A2.** Desde el **SoC EDS
+Command Shell**, en la raíz del repo:
+
+```sh
+alt-boot-disk-util -a write \
+    -p sw/preloader/preloader-mkpimage.bin \
+    -b sw/preloader/uboot-socfpga/u-boot.img \
+    -d F
+```
+(`-d F` = la letra que le diste a la FAT; la utilidad ubica la A2 en ese mismo
+disco físico.)
+
+**B.3 — Copiar el resto a la FAT** (reproductor, script de arranque y canciones).
+Desde el SoC EDS Command Shell, en la raíz del repo:
+
+```sh
+cp sw/reproductor_bare.bin hw/scripts/u-boot.scr /cygdrive/f/
+cp songs/*.WAV /cygdrive/f/        # tus WAV con nombres 8.3
+```
+(o arrastrándolos en el Explorador a la unidad `F:`).
 
 ---
 
