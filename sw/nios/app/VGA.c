@@ -12,9 +12,13 @@
  *   X ocupa los bits [6:0], Y los bits [12:7].
  *   Por eso el offset de fila es (y << 7).
  */
-static inline volatile uint32_t *vga_addr(int x, int y)
+static inline volatile uint8_t *vga_addr(int x, int y)
 {
-    return (volatile uint32_t *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
+    /* El char buffer es byte-direccionable: cada caracter en una direccion de
+     * byte (y<<7)+x. Hay que escribir un BYTE, no una palabra de 32 bits — el
+     * Nios II alinea las escrituras de 32 bits a multiplos de 4 y perderia 3 de
+     * cada 4 caracteres. */
+    return (volatile uint8_t *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
 }
 
 void vga_putchar(int x, int y, char c)

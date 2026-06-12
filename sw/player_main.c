@@ -23,6 +23,13 @@
 #define KEY_NEXT_MASK   (1U << 2)   /* KEY2 = siguiente */
 #define KEY_PREV_MASK   (1U << 3)   /* KEY3 = anterior  */
 
+/* Watchdog L4 del HPS: el BootROM lo deja HABILITADO. Si la app no lo reinicia
+ * periodicamente, el watchdog resetea el HPS (reboot loop cada pocos segundos).
+ * Escribir 0x76 al Counter Restart Register (CRR) lo "patea". */
+#define L4WD0_CRR   (*(volatile uint32_t*)0xFFD0200CU)
+#define WDT_KICK    0x76U
+static inline void wdt_pet(void) { L4WD0_CRR = WDT_KICK; }
+
 static const char* PLAYLIST[] = {
     "SONG1.WAV", "SONG2.WAV", "SONG3.WAV", "SONG4.WAV", "SONG5.WAV",
     "SONG6.WAV", "SONG7.WAV", "SONG8.WAV", "SONG9.WAV", "SONG10.WAV",
@@ -78,6 +85,7 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
     fat32_open(nombre, &f);
     uint32_t to_skip = data_off;
     while (to_skip > 0) {
+        wdt_pet();
         uint32_t n = (to_skip > 512U) ? 512U : to_skip;
         int r = fat32_read(&f, audio_block, n);
         if (r <= 0) break;
@@ -87,6 +95,7 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
     /* Streaming NO bloqueante: revisa botones en cada vuelta. */
     uint32_t bloque = 0, restantes = data_size;
     while (restantes > 0) {
+        wdt_pet();                     /* mantener vivo el HPS (watchdog) */
         int b = poll_botones();
         if (b == TRK_NEXT || b == TRK_PREV) {
             audio_bridge_track_end();
@@ -111,7 +120,9 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
 int main(void) {
     printf("\n=== REPRODUCTOR DE AUDIO (HPS BARE-METAL) ===\n");
 
+    wdt_pet();
     sd_init();
+    wdt_pet();
     if (fat32_mount() != 0) {
         printf("[ERROR] No se pudo montar la SD (FAT32).\n");
         return 1;
@@ -122,6 +133,7 @@ int main(void) {
     /* Reproduccion continua con navegacion (REQ-01/REQ-02) */
     uint32_t cur = 0;
     while (1) {
+        wdt_pet();
         TrackResult r = reproducir_pista(PLAYLIST[cur], cur + 1);
         if (r == TRK_PREV) {
             cur = (cur == 0) ? (PLAYLIST_LEN - 1) : (cur - 1);
