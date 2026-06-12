@@ -46,16 +46,17 @@ static void fifo_write_word(uint32_t word) {
  * API pública
  * ========================================================================== */
 
-void audio_bridge_init(const WavHeader* header) {
+void audio_bridge_init(const WavHeader* header, uint32_t track_num) {
     /* --- 1. Calcular cuántos bloques de 512 B necesitará el stream --- */
     uint32_t total_blocks = header->subchunk2_size / 512U;
     if (header->subchunk2_size % 512U != 0U) {
         total_blocks++;  /* Bloque fraccionario final */
     }
 
-    /* --- 2. Enviar CMD_TRACK_START con total_blocks en el payload ---
-     *        El NIOS interpreta esto como "nueva pista, espera metadatos". */
-    fifo_write_word(CMD_BUILD(CMD_TRACK_START, total_blocks));
+    /* --- 2. Enviar CMD_TRACK_START con el NUMERO DE PISTA en el payload ---
+     *        (el NIOS lo usa para mostrar la pista actual; total_blocks viaja
+     *         igual en el TrackMetadataPacket). */
+    fifo_write_word(CMD_BUILD(CMD_TRACK_START, track_num));
 
     /* --- 3. Construir y enviar el TrackMetadataPacket (5 palabras) --- */
     TrackMetadataPacket meta;
@@ -151,5 +152,14 @@ void audio_bridge_send_text(const char* title, const char* artist) {
 
 #ifdef QEMU_TEST
     printf("[Audio Bridge] CMD_TRACK_TEXT: \"%s\" / \"%s\"\n", title, artist);
+#endif
+}
+
+uint32_t audio_bridge_fifo_free(void) {
+#ifdef QEMU_TEST
+    return IPC_FIFO_DEPTH;          /* en simulacion siempre hay lugar */
+#else
+    uint32_t usadas = *CSR_REG(CSR_LEVEL_OFFSET);
+    return (usadas < IPC_FIFO_DEPTH) ? (IPC_FIFO_DEPTH - usadas) : 0U;
 #endif
 }

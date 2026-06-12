@@ -142,7 +142,7 @@ ACDS_VERSION := 18.1
 ELF := control_app.elf
 
 # Paths to C, C++, and assembly source files.
-C_SRCS := main.c
+C_SRCS := main.c vga.c vga_ui.c
 CXX_SRCS :=
 ASM_SRCS :=
 

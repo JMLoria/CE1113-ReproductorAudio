@@ -83,7 +83,7 @@ typedef struct __attribute__((packed)) {
  *
  * @param header  Puntero al WavHeader validado por wav_parse_header().
  */
-void audio_bridge_init(const WavHeader* header);
+void audio_bridge_init(const WavHeader* header, uint32_t track_num);
 
 /**
  * @brief Envía 512 bytes (128 words de 32 bits) de audio PCM al NIOS.
@@ -138,5 +138,16 @@ void audio_bridge_pause(void);
  * Llamar una vez por pista, junto con audio_bridge_init().
  */
 void audio_bridge_send_text(const char* title, const char* artist);
+
+/* Profundidad del FIFO IPC (ver FIFO_DEPTH en soc_system.qsys) */
+#define IPC_FIFO_DEPTH          1024U
+/* Palabras que ocupa un bloque completo: 1 (CMD_BLOCK_READY) + 128 (PCM) */
+#define AUDIO_BRIDGE_BLOCK_WORDS  129U
+
+/**
+ * @brief Devuelve cuantas palabras libres quedan en el FIFO IPC.
+ * Permite enviar bloques sin bloquear (revisar espacio antes de send_block).
+ */
+uint32_t audio_bridge_fifo_free(void);
 
 #endif /* AUDIO_BRIDGE_H */
