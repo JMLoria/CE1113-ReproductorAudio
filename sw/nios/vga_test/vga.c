@@ -4,17 +4,30 @@
  * Implementacion del driver VGA (Character Buffer for VGA Display).
  * Ver vga.h para la descripcion de la interfaz.
  *
+ * NOTA DE DIRECCIONAMIENTO:
+ *   El Character Buffer expone una posicion por CADA BYTE:
+ *     direccion = CHAR_BUFFER_BASE + (y << 7) + x
+ *   Cada caracter es 1 byte (codigo ASCII). Por eso el puntero de
+ *   acceso es (volatile char *), NO (volatile uint32_t *). Usar un
+ *   puntero de 32 bits hacia que cada caracter cayera cada 4 columnas
+ *   (texto espaciado/entremezclado en pantalla).
+ *
+ *   El rango del slave (0x9_4000..0x9_5fff = 8 KB) confirma acceso por
+ *   byte: 60 filas * 128 (stride 1<<7) = 7680 bytes, que caben en 8 KB.
+ *   Si fuera acceso por word de 32 bits requeriria 4x ese espacio.
+ *
  * R_SoC - REQ-09
  */
+
 #include "vga.h"
 
 /* Calcula la direccion de memoria del caracter en (x, y).
  *   X ocupa los bits [6:0], Y los bits [12:7].
  *   Por eso el offset de fila es (y << 7).
- */
-static inline volatile uint32_t *vga_addr(int x, int y)
+ *   Acceso por BYTE: puntero a char (1 byte por caracter). */
+static inline volatile char *vga_addr(int x, int y)
 {
-    return (volatile uint32_t *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
+    return (volatile char *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
 }
 
 void vga_putchar(int x, int y, char c)
@@ -22,7 +35,7 @@ void vga_putchar(int x, int y, char c)
     if (x < 0 || x >= VGA_COLS || y < 0 || y >= VGA_ROWS) {
         return;  /* fuera de la grilla, ignorar */
     }
-    *vga_addr(x, y) = (uint32_t)(uint8_t)c;
+    *vga_addr(x, y) = c;
 }
 
 void vga_print(int x, int y, const char *str)
@@ -32,7 +45,7 @@ void vga_print(int x, int y, const char *str)
     }
     while (*str != '\0' && x < VGA_COLS) {
         if (x >= 0) {
-            *vga_addr(x, y) = (uint32_t)(uint8_t)(*str);
+            *vga_addr(x, y) = *str;
         }
         x++;
         str++;
@@ -58,7 +71,7 @@ void vga_clear(void)
     int x, y;
     for (y = 0; y < VGA_ROWS; y++) {
         for (x = 0; x < VGA_COLS; x++) {
-            *vga_addr(x, y) = (uint32_t)' ';
+            *vga_addr(x, y) = ' ';
         }
     }
 }
@@ -70,7 +83,7 @@ void vga_clear_row(int y)
         return;
     }
     for (x = 0; x < VGA_COLS; x++) {
-        *vga_addr(x, y) = (uint32_t)' ';
+        *vga_addr(x, y) = ' ';
     }
 }
 

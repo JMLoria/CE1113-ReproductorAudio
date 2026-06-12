@@ -142,18 +142,10 @@ ACDS_VERSION := 18.1
 ELF := vga_test.elf
 
 # Paths to C, C++, and assembly source files.
-C_SRCS :=
+C_SRCS += main.c
+C_SRCS += vga.c
 CXX_SRCS :=
 ASM_SRCS :=
-SRC_DIR_01 := $(call adjust-path,.)
-SDIR_C_SRCS += $(SRC_DIR_01)/main.c
-SDIR_C_SRCS += $(SRC_DIR_01)/vga.c
-SDIR_CXX_SRCS :=
-SDIR_ASM_SRCS :=
-
-# Variables for source paths as specified by --src-dir and 
-# --src-rdir commands.  Source files found in those directories as listed below 
-# using those SRC_DIR variables.
 
 
 # Path to root of object file tree.
