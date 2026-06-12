@@ -72,8 +72,24 @@ bare: $(BARE_SRCS) $(BARE_LD)
 	@echo ">>> App bare-metal lista: $(BARE_BIN)  (entry 0x00100000)"
 	@echo ">>> En U-Boot:  fatload mmc 0:1 0x00100000 $(BARE_BIN); go 0x00100000"
 
+# ---------------------------------------------------------------------------
+# Prueba bare-metal del lector FAT32 (monta la SD y abre una cancion por nombre).
+# ---------------------------------------------------------------------------
+FAT_ELF   = fat_test_bare.elf
+FAT_BIN   = fat_test_bare.bin
+FAT_SRCS  = startup/crt0.S bsp/hps_uart.c bsp/syscalls.c \
+            fat_test_main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c \
+            fat32/fat32.c
+FAT_CFLAGS = $(BARE_CFLAGS) -Ifat32
+
+fat_test: $(FAT_SRCS) $(BARE_LD)
+	$(BARE_CC) $(FAT_CFLAGS) $(BARE_LDFLAGS) $(FAT_SRCS) -o $(FAT_ELF) -lc -lgcc
+	$(BARE_OBJCOPY) -O binary $(FAT_ELF) $(FAT_BIN)
+	@echo ">>> Prueba FAT32 lista: $(FAT_BIN)  (entry 0x00100000)"
+	@echo ">>> En U-Boot:  fatload mmc 0:1 0x00100000 $(FAT_BIN); go 0x00100000"
+
 clean:
 	rm -f *.o *.elf *.bin SD_Driver/*.o wav_parser/*.o audio_bridge/*.o \
-	      startup/*.o bsp/*.o
+	      startup/*.o bsp/*.o fat32/*.o
 
-.PHONY: qemu real clean sd_test bare
+.PHONY: qemu real clean sd_test bare fat_test
