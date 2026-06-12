@@ -370,8 +370,8 @@ int main(void) {
 	}
 
 	return 0;
-  
-  
+}
+
 //  /* main.c  -  Prueba "hello world" del driver VGA (REQ-09)
 //  *
 //  * Objetivo: confirmar que la cadena NIOS -> char_buffer ->
