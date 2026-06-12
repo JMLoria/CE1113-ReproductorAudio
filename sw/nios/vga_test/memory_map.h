@@ -1,0 +1,241 @@
+/*
+ * memory_map.h
+ *
+ * Mapa de memoria del sistema NIOS II para el reproductor de audio.
+ *
+ * Acceso por punteros directos, sin uso de HAL.
+ *
+ */
+#ifndef MEMORY_MAP_H
+#define MEMORY_MAP_H
+#include <stdint.h>
+/* ==========================================================
+ * Direcciones base de periféricos (vista desde NIOS II)
+ * ========================================================== */
+#define RAM_BASE              0x00000000U   /* 64 KB on-chip RAM */
+#define NIOS_DEBUG_BASE       0x00010000U
+#define SYSID_BASE            0x00020000U
+#define JTAG_UART_BASE        0x00030000U
+#define TIMER_BASE            0x00040000U
+#define BUTTONS_PIO_BASE      0x00050000U
+#define SWITCHES_PIO_BASE     0x00051000U
+#define LEDS_PIO_BASE         0x00052000U
+#define HEX_DISPLAY_BASE      0x00060000U   /* módulo personalizado */
+#define AUDIO_BASE            0x00070000U   /* Audio IP (reproducción) */
+#define AUDIO_CONFIG_BASE     0x00072000U   /* Config I2C del codec WM8731 */
+#define AUDIO_FILTER_CONTROL_BASE  0x00080000U  /* Selección de filtro (R_DSP) */
+#define AUDIO_SAMPLE_INPUT_BASE    0x00081000U  /* FIFO de muestras (R_DSP) */
+#define CHAR_CTRL_BASE        0x00090000U   /* VGA: control char buffer */
+#define CHAR_BUFFER_BASE      0x00094000U   /* VGA: buffer de caracteres 80x60 */
+#define FIFO_OUT_BASE         0x000A0000U   /* IPC: NIOS lee del FIFO */
+#define FIFO_OUT_CSR_BASE     0x000A0020U   /* IPC: status del FIFO */
+/* ==========================================================
+ * IRQs del NIOS II
+ * ========================================================== */
+#define IRQ_JTAG_UART         1
+#define IRQ_TIMER             2
+#define IRQ_BUTTONS           3
+#define IRQ_AUDIO             4
+/* ==========================================================
+ * HEX Display Controller (REQ-04, REQ-10)
+ *
+ * Módulo personalizado que controla los 6 displays de 7-seg.
+ * ========================================================== */
+/* Offsets de registros */
+#define HEX_CONTROL_OFFSET    0x00
+#define HEX_STATUS_OFFSET     0x04
+#define HEX_DATA_OFFSET       0x08
+/* Bits del registro CONTROL */
+#define HEX_CTRL_ENABLE       (1 << 0)
+#define HEX_CTRL_MODE_TIME    (0 << 1)   /* mostrar MM:SS */
+#define HEX_CTRL_MODE_HEX     (1 << 1)   /* mostrar número hex */
+/* Bits del registro STATUS */
+#define HEX_STATUS_READY      (1 << 0)
+/* ==========================================================
+ * Audio IP (altera_up_avalon_audio)
+ *
+ * Audio IP de Intel University Program.
+ * Solo reproducción (Audio Out), 16-bit, 48 kHz.
+ * ========================================================== */
+/* Offsets de registros */
+#define AUDIO_CONTROL_OFFSET   0x00   /* enable IRQ, clear FIFOs */
+#define AUDIO_FIFOSPACE_OFFSET 0x04   /* espacio disponible en FIFOs */
+#define AUDIO_LEFTDATA_OFFSET  0x08   /* dato canal izquierdo */
+#define AUDIO_RIGHTDATA_OFFSET 0x0C   /* dato canal derecho */
+/* Bits del registro CONTROL */
+#define AUDIO_CTRL_RE          (1 << 0)   /* Read interrupt enable */
+#define AUDIO_CTRL_WE          (1 << 1)   /* Write interrupt enable */
+#define AUDIO_CTRL_CR          (1 << 2)   /* Clear read FIFO */
+#define AUDIO_CTRL_CW          (1 << 3)   /* Clear write FIFO */
+/* FIFOSPACE: 4 bytes empaquetados en un registro de 32 bits
+ *   [7:0]   RARC - Read Available Right Channel
+ *   [15:8]  RALC - Read Available Left Channel
+ *   [23:16] WSRC - Write Space Right Channel
+ *   [31:24] WSLC - Write Space Left Channel
+ * Antes de reproducir, verificar que WSLC/WSRC > 0. */
+#define AUDIO_FIFO_WSLC(x)     (((x) >> 24) & 0xFF)
+#define AUDIO_FIFO_WSRC(x)     (((x) >> 16) & 0xFF)
+#define AUDIO_FIFO_RALC(x)     (((x) >> 8)  & 0xFF)
+#define AUDIO_FIFO_RARC(x)     (((x) >> 0)  & 0xFF)
+/* ==========================================================
+ * Audio Config (altera_up_avalon_audio_and_video_config)
+ *
+ * Configura el codec WM8731 por I2C al arrancar (Auto Initialize).
+ * Normalmente no se requiere acceso manual a sus registros.
+ * ========================================================== */
+/* ==========================================================
+ * Audio Filter Control (R_DSP - Noemi)
+ *
+ * Registro de selección de filtro. El NIOS lee los switches,
+ * decide el filtro y escribe filter_sel aquí. El conduit
+ * filter_sel (2 bits) va al módulo AudioFilter en el top-level.
+ *
+ * filter_sel:
+ *   0 = bypass, 1 = lowpass, 2 = highpass, 3 = bass boost
+ *
+ * NOTA: addressUnits = WORDS. address N -> offset byte N*4.
+ * ========================================================== */
+/* Offsets de registros */
+#define FILTER_CONTROL_OFFSET  0x00   /* R/W: bits[1:0] = filter_sel */
+#define FILTER_STATUS_OFFSET   0x04   /* R:   bits[1:0] = filter_sel actual */
+#define FILTER_ID_OFFSET       0x08   /* R:   0xA0F10001 (ID/debug) */
+/* Valores de selección de filtro */
+#define FILTER_SEL_BYPASS      0x0
+#define FILTER_SEL_LOWPASS     0x1
+#define FILTER_SEL_HIGHPASS    0x2
+#define FILTER_SEL_BASSBOOST   0x3
+/* ==========================================================
+ * Audio Sample Input (R_DSP - Noemi)
+ *
+ * FIFO de doble reloj. El NIOS escribe muestras PCM 16-bit que
+ * salen por el conduit hacia AudioFilter -> serializador -> codec.
+ *
+ * NOTA: addressUnits = WORDS. address N -> offset byte N*4.
+ * ========================================================== */
+/* Offsets de registros */
+#define SAMPLE_WRITE_OFFSET    0x00   /* W: bits[15:0] = muestra PCM signed 16-bit */
+#define SAMPLE_STATUS_OFFSET   0x04   /* R: flags de estado del FIFO (ver bits) */
+#define SAMPLE_CONTROL_OFFSET  0x08   /* R/W: bit 0 = enable */
+#define SAMPLE_ID_OFFSET       0x0C   /* R: 0xA5A10001 (ID/debug) */
+/* Bits del registro STATUS */
+#define SAMPLE_STATUS_FIFO_FULL    (1 << 0)
+#define SAMPLE_STATUS_FIFO_EMPTY   (1 << 1)
+#define SAMPLE_STATUS_READY_WR     (1 << 2)   /* listo para escribir */
+#define SAMPLE_STATUS_OVERFLOW     (1 << 3)
+#define SAMPLE_STATUS_UNDERFLOW    (1 << 4)
+/* bits [25:16] del STATUS = wrusedw (nivel de llenado aproximado) */
+#define SAMPLE_STATUS_WRUSEDW(x)   (((x) >> 16) & 0x3FF)
+/* Bits del registro CONTROL */
+#define SAMPLE_CTRL_ENABLE     (1 << 0)
+#define SAMPLE_CTRL_CLEAR      (1 << 1)   /* writedata[1]=1 limpia flags */
+/* ==========================================================
+ * VGA - Character Buffer for VGA Display (REQ-09)
+ *
+ * Grilla de 80x60 caracteres (modo texto). Resolución 640x480.
+ * El NIOS escribe códigos ASCII; el HW renderiza la fuente.
+ *
+ * Para escribir un carácter en la posición (x, y):
+ *   dirección = CHAR_BUFFER_BASE + (y << 7) + x
+ * El desplazamiento de fila es 128 (1 << 7) aunque solo se
+ * usen 80 columnas (organización interna del IP).
+ *
+ * El acceso es por BYTE (cada carácter es 1 byte ASCII),
+ * por eso se usa un puntero (volatile char *), no uint32_t.
+ * ========================================================== */
+#define VGA_COLS              80
+#define VGA_ROWS              60
+/* Dirección de un carácter en (x, y) dentro del buffer */
+#define CHAR_ADDR(x, y)       (CHAR_BUFFER_BASE + ((y) << 7) + (x))
+/* Registro de control del char buffer (resolución, etc.).
+ * Con la config por defecto normalmente no se necesita tocar. */
+#define CHAR_CTRL_RESOLUTION_OFFSET  0x00
+/* ==========================================================
+ * FIFO IPC HPS <-> NIOS (REQ-17)
+ *
+ * Avalon FIFO Memory para compartir el stream de audio entre
+ * el HPS (ARM, productor) y el NIOS II (consumidor).
+ *
+ *   HPS escribe muestras  ->  FIFO  ->  NIOS las lee
+ *
+ * Profundidad 1024, ancho 32-bit, single clock.
+ *
+ * NOTA: el HPS ve estas interfaces a través del Lightweight
+ * HPS-to-FPGA bridge (base física 0xFF200000). Ver docs/ipc_fifo.md
+ * para las direcciones y el uso del lado HPS.
+ * ========================================================== */
+/* Offsets de los registros del CSR (control/status slave del FIFO) */
+#define FIFO_LEVEL_REG        0x00   /* número de palabras en el FIFO */
+#define FIFO_STATUS_REG       0x04   /* flags de estado (ver máscaras) */
+#define FIFO_EVENT_REG        0x08   /* eventos IRQ (write-1-to-clear) */
+#define FIFO_IENABLE_REG      0x0C   /* habilitación de interrupciones */
+#define FIFO_ALMOSTFULL_REG   0x10   /* umbral almost-full */
+#define FIFO_ALMOSTEMPTY_REG  0x14   /* umbral almost-empty */
+/* Máscaras del registro STATUS / EVENT */
+#define FIFO_STATUS_FULL      0x01   /* FIFO lleno */
+#define FIFO_STATUS_EMPTY     0x02   /* FIFO vacío */
+#define FIFO_STATUS_AF        0x04   /* almost full */
+#define FIFO_STATUS_AE        0x08   /* almost empty */
+#define FIFO_STATUS_OVF       0x10   /* overflow */
+#define FIFO_STATUS_UDF       0x20   /* underflow */
+/* Vista HPS / ARM (a través del Lightweight bridge, base 0xFF200000).
+ * Verificar el offset del in_csr al generar hps_0.h con el SoC EDS. */
+#define HPS_LW_BRIDGE_BASE    0xFF200000U
+#define FIFO_IN_HPS           (HPS_LW_BRIDGE_BASE + 0x00000U)  /* HPS escribe muestras */
+#define FIFO_IN_CSR_HPS       (HPS_LW_BRIDGE_BASE + 0xA0020U)  /* HPS lee status */
+/* ==========================================================
+ * Offsets de registros - PIOs (Parallel I/O)
+ * ========================================================== */
+#define PIO_DATA_OFFSET       0x00
+#define PIO_DIRECTION_OFFSET  0x04
+#define PIO_IRQMASK_OFFSET    0x08
+#define PIO_EDGECAP_OFFSET    0x0C
+/* ==========================================================
+ * Offsets de registros - Interval Timer
+ * ========================================================== */
+#define TIMER_STATUS_OFFSET   0x00
+#define TIMER_CONTROL_OFFSET  0x04
+#define TIMER_PERIODL_OFFSET  0x08
+#define TIMER_PERIODH_OFFSET  0x0C
+#define TIMER_SNAPL_OFFSET    0x10
+#define TIMER_SNAPH_OFFSET    0x14
+/* Bits del Timer Control */
+#define TIMER_CTRL_ITO        (1 << 0)   /* IRQ enable */
+#define TIMER_CTRL_CONT       (1 << 1)   /* Continuous */
+#define TIMER_CTRL_START      (1 << 2)
+#define TIMER_CTRL_STOP       (1 << 3)
+/* Bits del Timer Status */
+#define TIMER_STATUS_TO       (1 << 0)   /* Timeout flag */
+#define TIMER_STATUS_RUN      (1 << 1)
+/* ==========================================================
+ * Macros para acceso a registros (REG_READ / REG_WRITE)
+ *
+ * Uso:
+ *   REG_WRITE(HEX_DISPLAY_BASE, HEX_CONTROL_OFFSET, HEX_CTRL_ENABLE);
+ *   REG_WRITE(HEX_DISPLAY_BASE, HEX_DATA_OFFSET, 125);  // mostrar 02:05
+ *
+ *   REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0xFF);
+ *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET);
+ *
+ *   // Seleccionar filtro según switches:
+ *   uint32_t sw = REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET) & 0x3;
+ *   REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, sw);
+ *
+ *   // Escribir una muestra al Audio Sample Input si hay espacio:
+ *   uint32_t st = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
+ *   if (!(st & SAMPLE_STATUS_FIFO_FULL)) {
+ *       REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra & 0xFFFF);
+ *   }
+ *
+ *   // Leer una muestra del FIFO IPC (HPS->NIOS) si hay datos:
+ *   if (REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0) {
+ *       uint32_t muestra = REG_READ(FIFO_OUT_BASE, 0x00);
+ *   }
+ *
+ *   // Escribir un carácter en VGA en la posición (x, y):
+ *   *((volatile char *)CHAR_ADDR(10, 5)) = 'A';
+ * ========================================================== */
+#define REG_WRITE(base, offset, value) \
+    (*((volatile uint32_t *)((base) + (offset))) = (value))
+#define REG_READ(base, offset) \
+    (*((volatile uint32_t *)((base) + (offset))))
+#endif /* MEMORY_MAP_H */

@@ -86,11 +86,11 @@ ACDS_VERSION := 18.1
 
 # Quartus Generated JDI File. Required for resolving node instance ID's with 
 # design component names. 
-JDI_FILE := C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/Proyecto_II.jdi
+JDI_FILE := $(ABS_BSP_ROOT_DIR)/../../../hw/Proyecto_II.jdi
 
 # Qsys--generated SOPCINFO file. Required for resolving node instance ID's with 
 # design component names. 
-SOPCINFO_FILE := C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
+SOPCINFO_FILE := $(ABS_BSP_ROOT_DIR)/../../../hw/soc_system.sopcinfo
 
 # Big-Endian operation. 
 # setting BIG_ENDIAN is false
@@ -161,9 +161,9 @@ SOPC_SYSID_FLAG += --sidp=0x20000
 ELF_PATCH_FLAG  += --sidp 0x20000
 
 # The SOPC Timestamp 
-# setting SOPC_TIMESTAMP is 1781134014
-SOPC_SYSID_FLAG += --timestamp=1781134014
-ELF_PATCH_FLAG  += --timestamp 1781134014
+# setting SOPC_TIMESTAMP is 1781230460
+SOPC_SYSID_FLAG += --timestamp=1781230460
+ELF_PATCH_FLAG  += --timestamp 1781230460
 
 # Enable JTAG UART driver to recover when host is inactive causing buffer to 
 # full without returning error. Printf will not fail with this recovery. none 

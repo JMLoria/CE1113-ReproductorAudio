@@ -2,9 +2,9 @@
  * linker.x - Linker script
  *
  * Machine generated for CPU 'nios2' in SOPC Builder design 'soc_system'
- * SOPC Builder design path: C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
+ * SOPC Builder design path: ../../../hw/soc_system.sopcinfo
  *
- * Generated: Mon Jun 01 13:10:02 CST 2026
+ * Generated: Thu Jun 11 20:53:00 CST 2026
  */
 
 /*
