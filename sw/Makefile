@@ -49,7 +49,31 @@ sd_test: $(SD_TEST_SRCS)
 	arm-none-eabi-objcopy -O binary $(SD_TEST_ELF) sd_test_hps.bin
 	@echo ">>> Binario de prueba SD: sd_test_hps.bin"
 	
-clean:
-	rm -f *.o *.elf *.bin SD_Driver/*.o wav_parser/*.o audio_bridge/*.o
+# ---------------------------------------------------------------------------
+# Prueba del driver SD como app BARE-METAL real para el HPS.
+# Se enlaza con crt0 + linker script y salida por UART (printf funciona).
+# Se carga desde U-Boot:  fatload mmc 0:1 0x00100000 sd_test_bare.bin; go 0x00100000
+# Requiere el toolchain bare-metal de SoC EDS (arm-altera-eabi-*).
+# ---------------------------------------------------------------------------
+BARE_CC      = arm-altera-eabi-gcc
+BARE_OBJCOPY = arm-altera-eabi-objcopy
+BARE_ELF     = sd_test_bare.elf
+BARE_BIN     = sd_test_bare.bin
+BARE_LD      = startup/cyclone5_baremetal.ld
+BARE_SRCS    = startup/crt0.S bsp/hps_uart.c bsp/syscalls.c \
+               sd_test_main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c
+BARE_CFLAGS  = -mcpu=cortex-a9 -mfloat-abi=soft -marm -g -O2 -Wall \
+               -ffreestanding -ISD_Driver -Iwav_parser -Ibsp
+BARE_LDFLAGS = -nostartfiles -T $(BARE_LD)
 
-.PHONY: qemu real clean sd_test
+bare: $(BARE_SRCS) $(BARE_LD)
+	$(BARE_CC) $(BARE_CFLAGS) $(BARE_LDFLAGS) $(BARE_SRCS) -o $(BARE_ELF) -lc -lgcc
+	$(BARE_OBJCOPY) -O binary $(BARE_ELF) $(BARE_BIN)
+	@echo ">>> App bare-metal lista: $(BARE_BIN)  (entry 0x00100000)"
+	@echo ">>> En U-Boot:  fatload mmc 0:1 0x00100000 $(BARE_BIN); go 0x00100000"
+
+clean:
+	rm -f *.o *.elf *.bin SD_Driver/*.o wav_parser/*.o audio_bridge/*.o \
+	      startup/*.o bsp/*.o
+
+.PHONY: qemu real clean sd_test bare
