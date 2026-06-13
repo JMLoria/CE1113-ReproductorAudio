@@ -122,22 +122,15 @@ void handle_exception(void) {
 }
 
 void inicializar_interrupciones_botones(void) {
-	// 1. Limpiar cualquier captura de flanco residual previa en el periferico
+	// MODO POLLING: el super-loop sondea el registro de captura de flanco del
+	// PIO. NO se habilitan interrupciones de CPU (bit PIE): el handler de
+	// excepciones de este proyecto es una funcion C sin guardado/restauracion
+	// de contexto ni 'eret', y colgaba/reiniciaba el Nios al primer flanco de
+	// boton (borraba la VGA). El sondeo cumple la misma funcion de forma segura.
+	//
+	// Solo limpiamos cualquier flanco residual; la captura de flanco la hace el
+	// hardware del PIO de forma continua, independiente del bit PIE.
 	REG_WRITE(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET, 0xF);
-
-	// 2. Continuar la mascara del periferico PIO para escuchar los 4 botones (KEY0 a KEY3)
-	REG_WRITE(BUTTONS_PIO_BASE, PIO_IRQMASK_OFFSET, 0xF);
-
-	// 3. Configurar la CPU Nios II: Activar la linea IRQ 3 en el registro ineable
-	uint32_t ienable_actual = NIOS2_READ_CTL_REG(NIOS2_CTL_IENABLE);
-	ienable_actual |= (1 << IRQ_BUTTONS);
-	NIOS2_WRITE_CTL_REG(NIOS2_CTL_IENABLE, ienable_actual);
-
-	// 4. Habilitar Interrupciones Globales en la CPU
-	// (Poner a '1' el bit PIE en el registro status)
-	uint32_t status_actual = NIOS2_READ_CTL_REG(NIOS2_CTL_STATUS);
-	status_actual |= NIOS2_STATUS_PIE_MASK;
-	NIOS2_WRITE_CTL_REG(NIOS2_CTL_STATUS, status_actual);
 }
 
 void inicializar_timer_1s(void) {
@@ -317,7 +310,27 @@ int main(void) {
 
 	// SUPER LOOP - MOTOR DE CONTROL DEL REPRODUCTOR
 	while(1) {
-		// 1. GESTION DE BOTONES (Rutinas de control por interrupcion)
+		// 0. SONDEO de botones: el PIO captura el flanco de bajada por hardware
+		//    (registro edge-capture), lo leemos aqui sin interrupciones.
+		uint32_t ec = REG_READ(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET) & 0xF;
+		if (ec) {
+			REG_WRITE(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET, ec);  // limpiar flancos
+			boton_detectado = ec;
+			bandera_boton_presionado = 1;
+		}
+
+		// 0b. SONDEO del timer: el timer pone su bandera de timeout cada 1 s.
+		if (REG_READ(TIMER_BASE, TIMER_STATUS_OFFSET) & TIMER_STATUS_TO) {
+			REG_WRITE(TIMER_BASE, TIMER_STATUS_OFFSET, 0);  // limpiar timeout
+			if (estado_actual == STATE_PLAY) {
+				tiempo_segundos++;
+				segundos = tiempo_segundos % 60;
+				minutos  = tiempo_segundos / 60;
+				bandera_timer_un_segundo = 1;
+			}
+		}
+
+		// 1. GESTION DE BOTONES (por sondeo)
 		if (bandera_boton_presionado) {
 			// Consumir bandera de evento
 			bandera_boton_presionado = 0;
@@ -341,45 +354,12 @@ int main(void) {
 				actualizar_interfaz_visual();
 			}
 
-			// BOTON 2 (KEY2): Siguiente Cancion
-			if (boton_detectado & (1 << 2)) {
-				// Paso de seguridad, cambiar momentaneamente a STOP
-				estado_actual = STATE_STOP;
-				actualizar_interfaz_visual();
-
-				tiempo_segundos = 0;
-				minutos = 0;
-				segundos = 0;
-				cancion_actual++;
-				if (cancion_actual > TOTAL_CANCIONES) {
-					// Volver a la primera pista
-					cancion_actual = 1;
-				}
-
-				// Volver a paner en PLAY en la nueva pista
-				estado_actual = STATE_PLAY;
-				actualizar_interfaz_visual();
-			}
-
-			// BOTON3 (KEY3): Cancion Anterior
-			if (boton_detectado & (1 << 3)) {
-				// Paso de seguridad, cambiar momentaneamente a STOP
-				estado_actual = STATE_STOP;
-				actualizar_interfaz_visual();
-
-				tiempo_segundos = 0;
-				minutos = 0;
-				segundos = 0;
-				cancion_actual--;
-				if (cancion_actual < 1) {
-					// Ir a la ultima pista
-					cancion_actual = TOTAL_CANCIONES;
-				}
-
-				// Volver a paner en PLAY en la nueva pista
-				estado_actual = STATE_PLAY;
-				actualizar_interfaz_visual();
-			}
+			// BOTON 2 (KEY2) y BOTON 3 (KEY3): Siguiente / Anterior.
+			// El HPS es el DUEÑO de la navegacion de pistas: lee KEY2/KEY3 por
+			// el puente ligero y cambia la cancion que streamea. El NIOS NO debe
+			// cambiarla por su cuenta (provocaria conflicto/desfase); solo refleja
+			// la pista que el HPS le indica via CMD_TRACK_START. Por eso aqui se
+			// ignoran KEY2/KEY3 (igual se limpio su flanco arriba).
 
 			boton_detectado = 0; // Restablecer el registro de captura procesado
 		}
