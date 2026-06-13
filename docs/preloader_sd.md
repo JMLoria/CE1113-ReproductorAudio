@@ -5,11 +5,10 @@ del proyecto y dejar la tarjeta SD lista para arrancar la aplicación bare-metal
 del reproductor (`reproductor_hps.bin` / `sd_test_hps.bin`).
 
 > **Contexto.** En la DE1-SoC la fuente de arranque del HPS (BSEL) está fijada
-> por hardware a **SD/MMC**, así que no hay que mover switches de boot: basta con
+> por hardware a **SD/MMC**, por lo cual no hay que mover switches de boot: basta con
 > que la SD tenga el preloader en el lugar correcto. La Boot ROM del chip lee el
 > preloader desde una **partición cruda con ID `0xA2`**, el preloader inicializa
-> PLLs, SDRAM y pin-mux, y luego carga y salta a la siguiente imagen (tu app o
-> U-Boot).
+> PLLs, SDRAM y pin-mux, y luego carga y salta a la siguiente imagen.
 
 ---
 
@@ -73,9 +72,7 @@ sw/preloader/preloader-mkpimage.bin
 > *startup* (vectores, stack, dirección de carga). Para que el preloader la
 > cargue y salte correctamente hay que enlazarla a la dirección que el preloader
 > espera (típicamente **`0x00100040`** en SDRAM) con un linker script y un
-> `crt0` mínimo de ARM Cortex-A9. El ejemplo de referencia
-> [robertofem/CycloneVSoC-examples → SD-baremetal](https://github.com/robertofem/CycloneVSoC-examples/tree/master/SD-baremetal)
-> trae exactamente ese linker script y Makefile para esta familia de placas.
+> `crt0` mínimo de ARM Cortex-A9.
 
 Una vez que la app esté bien enlazada, se le pone la cabecera de la misma forma
 que al preloader:
@@ -89,43 +86,25 @@ reemplaza por `reproductor_hps.bin`.)
 
 ---
 
-## 3. Rutas para que el preloader cargue la app
-
-Hay dos formas de encadenar el preloader con tu app. Elegí una:
-
-### Ruta A — App en la misma partición `0xA2` (más simple, sin U-Boot)
+## 3. Rutas para que el preloader cargue la app 
 
 El preloader carga la "siguiente imagen" que esté grabada justo después de él en
 la partición `0xA2`. Es la opción mínima para bare-metal: no necesitás U-Boot ni
 partición FAT.
-
-### Ruta B — U-Boot + carga desde FAT
-
-El preloader carga **U-Boot**, y U-Boot carga tu `.bin` desde una partición FAT
-(`fatload mmc 0:1 0x… app.bin; go 0x…`). Más pasos, pero te da consola, scripts
-de arranque y flexibilidad. Útil si más adelante querés cargar también el `.rbf`
-de la FPGA desde la SD. Requiere compilar U-Boot (`make uboot` en el BSP) y
-ajustar el `bootcmd`.
-
-Para el bring-up del driver SD, **usá la Ruta A**.
 
 ---
 
 ## 4. Particionar la SD y grabar el preloader
 
 La SD necesita al menos una partición cruda tipo `0xA2` para el preloader.
-Layout recomendado (sirve para Ruta A y, si después querés, Ruta B):
+Layout recomendado:
 
 | Part. | Tipo            | Tamaño   | Contenido                                  |
 |-------|-----------------|----------|--------------------------------------------|
 | p1    | `0x0C` (FAT32)  | ~256 MB  | (opcional) U-Boot, `.rbf`, datos           |
 | p3    | `0xA2` (raw)    | ~1 MB    | **preloader** (+ app en Ruta A)            |
 
-> ⚠️ **Cuidado con el dispositivo.** Confirmá la letra/`/dev` correcto de la SD
-> antes de escribir: equivocarse puede borrar otro disco. En Linux usá
-> `lsblk`; en Windows mirá el número de disco en *Administración de discos*.
-
-### 4a. Crear la partición A2 (una sola vez)
+### 4a. Crear la partición A2
 
 **Linux (fdisk):**
 ```sh
@@ -139,9 +118,9 @@ sudo mkfs.vfat -F32 /dev/sdX1     # solo si creaste la FAT
 
 El script `hw/scripts/make_sd_baremetal.sh` automatiza esto con chequeos.
 
-### 4b. Grabar el preloader (y la app en Ruta A)
+### 4b. Grabar el preloader 
 
-**Con la utilidad de SoC EDS (recomendada, Windows o Linux):**
+**Con la utilidad de SoC EDS :**
 ```sh
 # Solo preloader:
 alt-boot-disk-util -a write -p sw/preloader/preloader-mkpimage.bin -d <SD>
@@ -192,7 +171,7 @@ SDRAM calibration was successful
 
 ## 7. Resumen del orden de tareas
 
-1. `bsp-create-settings … && make -C sw/preloader` → `preloader-mkpimage.bin` ✅ (esta parte)
+1. `bsp-create-settings … && make -C sw/preloader` → `preloader-mkpimage.bin`
 2. Linker script + crt0 para la app bare-metal (siguiente parte) → `.bin` enlazado a `0x00100040`
 3. `mkpimage` a la app → `app-mkpimage.bin`
 4. Crear partición A2 en la SD
@@ -201,11 +180,3 @@ SDRAM calibration was successful
 
 ---
 
-## Fuentes
-
-- [Generating and Compiling the Preloader — RocketBoards.org](https://www.rocketboards.org/foswiki/Documentation/AVGSRDPreloader)
-- [Cyclone V: Preloader and Bootloader workflow (SoC EDS 19.1+) — RocketBoards Forum](https://forum.rocketboards.org/t/cyclone-v-preloader-and-bootloader-the-new-workflow-since-soc-eds-standard-version-19-1/2316)
-- [AN 709: HPS SoC Boot Guide — Cyclone V SoC Development Kit](https://manuals.plus/m/9a87a119316d4d8eae77921ce07df6fd80a13043909e3f5a7ce17d488bc8c1c8)
-- [Booting from SD/MMC – Custom Partition (A2) — Intel docs](https://www.intel.com/content/www/us/en/docs/programmable/683265/current/booting-from-sd-mmc-custom-partition.html)
-- [Cyclone V SoC Preloader will not run bare metal app — Intel Community](https://community.intel.com/t5/Programmable-Devices/Cyclone-V-SoC-Preloader-will-not-run-bare-metal-app/m-p/239388)
-- [robertofem/CycloneVSoC-examples → SD-baremetal (linker script + Makefile de referencia)](https://github.com/robertofem/CycloneVSoC-examples/tree/master/SD-baremetal)
