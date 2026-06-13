@@ -1,0 +1,50 @@
+# =============================================================================
+# Normalización de fin-de-línea.
+# El repositorio guarda SIEMPRE LF; cada quien lo ve según su SO al hacer
+# checkout. Esto elimina el "ruido" de archivos que aparecen modificados solo
+# por CRLF (Windows) vs LF, independientemente del core.autocrlf de cada uno.
+# =============================================================================
+
+# Git detecta texto vs binario y normaliza el texto a LF en el repo.
+* text=auto
+
+# --- Código y texto: LF en el repo ---
+*.c     text eol=lf
+*.h     text eol=lf
+*.S     text eol=lf
+*.s     text eol=lf
+*.v     text eol=lf
+*.sv    text eol=lf
+*.vhd   text eol=lf
+*.vhdl  text eol=lf
+*.tcl   text eol=lf
+*.sdc   text eol=lf
+*.qsf   text eol=lf
+*.qpf   text eol=lf
+*.qip   text eol=lf
+*.bsp   text eol=lf
+*.md    text eol=lf
+*.mk    text eol=lf
+*.ld    text eol=lf
+Makefile text eol=lf
+
+# --- Scripts de shell: SIEMPRE LF (si no, no corren en bash/cygwin) ---
+*.sh    text eol=lf
+
+# --- Binarios: que Git no los toque nunca ---
+*.sof   binary
+*.pof   binary
+*.rbf   binary
+*.bin   binary
+*.elf   binary
+*.srec  binary
+*.a     binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.mp4   binary
+*.mp3   binary
+*.wav   binary
+*.flac  binary
+*.gz    binary
+*.zip   binary
