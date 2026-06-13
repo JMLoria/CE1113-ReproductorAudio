@@ -57,6 +57,9 @@ static uint32_t pcm_left = 0;
 // Solo se acepta un paquete de texto inmediatamente despues de un META valido.
 // Evita que un falso match (datos PCM con byte alto 0xF0) escriba basura.
 static uint32_t expect_text = 0;
+// Palabras PCM ya enviadas al DSP en la pista actual. Sirve para derivar el
+// tiempo transcurrido (sincronizado al audio) sin depender del timer de HW.
+static uint32_t pcm_words_played = 0;
 
 // Metadatos de la pista actual (los llena el decodificador, los usa la VGA)
 volatile uint32_t track_sample_rate  = 0;
@@ -186,6 +189,7 @@ void procesar_streaming_audio(void) {
 					// El HPS manda el numero de pista en el payload; reiniciar tiempo.
 					cancion_actual  = CMD_PAYLOAD(word);
 					tiempo_segundos = 0; minutos = 0; segundos = 0;
+					pcm_words_played = 0;   // reiniciar el reloj de la pista
 					meta_idx = 0; fifo_state = FIFO_META;
 					break;
 				case CMD_TRACK_TEXT:
@@ -263,6 +267,7 @@ void procesar_streaming_audio(void) {
 			uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
 			REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, word & 0xFFFF);
 			pcm_left--;
+			pcm_words_played++;   // para el reloj de reproduccion (MM:SS)
 			if (pcm_left == 0) fifo_state = FIFO_IDLE;
 			break;
 		}
@@ -319,13 +324,17 @@ int main(void) {
 			bandera_boton_presionado = 1;
 		}
 
-		// 0b. SONDEO del timer: el timer pone su bandera de timeout cada 1 s.
-		if (REG_READ(TIMER_BASE, TIMER_STATUS_OFFSET) & TIMER_STATUS_TO) {
-			REG_WRITE(TIMER_BASE, TIMER_STATUS_OFFSET, 0);  // limpiar timeout
-			if (estado_actual == STATE_PLAY) {
-				tiempo_segundos++;
-				segundos = tiempo_segundos % 60;
-				minutos  = tiempo_segundos / 60;
+		// 0b. TIEMPO transcurrido derivado de las muestras YA reproducidas
+		//     (sincronizado al audio). El timer de hardware no daba timeout, asi
+		//     que el reloj se calcula como bytes_reproducidos / byterate.
+		//     Avanza solo mientras hay drenado (PLAY) y se congela en pausa/stop.
+		{
+			uint32_t byterate = track_sample_rate * track_channels * (track_bits / 8);
+			uint32_t t = byterate ? ((pcm_words_played * 4u) / byterate) : 0;
+			if (t != tiempo_segundos) {
+				tiempo_segundos = t;
+				segundos = t % 60;
+				minutos  = t / 60;
 				bandera_timer_un_segundo = 1;
 			}
 		}
