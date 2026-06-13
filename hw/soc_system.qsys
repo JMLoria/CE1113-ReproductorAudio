@@ -537,7 +537,7 @@
   <parameter name="board" value="DE1-SoC" />
   <parameter name="d5m_resolution" value="2592 x 1944" />
   <parameter name="dac_enable" value="true" />
-  <parameter name="data_format" value="Left Justified" />
+  <parameter name="data_format" value="I2S Format" />
   <parameter name="device">On-Board Peripherals</parameter>
   <parameter name="eai" value="true" />
   <parameter name="exposure" value="false" />
