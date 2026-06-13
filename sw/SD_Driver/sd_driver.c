@@ -132,6 +132,15 @@ typedef struct {
 /* Límite de iteraciones para evitar cuelgues si la tarjeta no responde */
 #define SD_POLL_TIMEOUT 5000000u
 
+/* Patear el watchdog L4WD0 (CRR @ 0xFFD0200C) dentro de los bucles de espera.
+ * Sin esto, una espera de ~1s puede acumularse con otras y disparar el reset
+ * del HPS a los 5s. Solo se usa en hardware real (no en QEMU_TEST). */
+#ifndef QEMU_TEST
+#define SD_WDT_PET()  (*(volatile uint32_t*)0xFFD0200CU = 0x76u)
+#else
+#define SD_WDT_PET()  ((void)0)
+#endif
+
 /* Estado del driver detectado durante la inicialización */
 static int      sd_is_sdhc = 0;   /* 1 si la tarjeta es de alta capacidad (SDHC/SDXC) */
 static uint32_t sd_rca     = 0;   /* Relative Card Address asignada por la tarjeta     */
@@ -146,7 +155,7 @@ static void sd_update_clocks(void) {
 #ifndef QEMU_TEST
     uint32_t guard = SD_POLL_TIMEOUT;
     SDMMC->CMD = CMD_START | CMD_UPD_CLK | CMD_PRV_DAT_WAIT;
-    while ((SDMMC->CMD & CMD_START) && --guard) { /* espera a que la CIU acepte */ }
+    while ((SDMMC->CMD & CMD_START) && --guard) { SD_WDT_PET(); }
 #endif
 }
 
@@ -196,19 +205,19 @@ static int sd_send_cmd(uint32_t index, uint32_t arg, uint32_t flags) {
 
     // Esperar a que la CIU acepte el comando (START se limpia)
     guard = SD_POLL_TIMEOUT;
-    while ((SDMMC->CMD & CMD_START) && --guard) { }
+    while ((SDMMC->CMD & CMD_START) && --guard) { SD_WDT_PET(); }
     if (guard == 0) return -1;
 
     // Si no se espera respuesta, terminamos aquí
     if (!(flags & CMD_RESP_EXP)) {
         guard = SD_POLL_TIMEOUT;
-        while (!(SDMMC->RINTSTS & INT_CMD_DONE) && --guard) { }
+        while (!(SDMMC->RINTSTS & INT_CMD_DONE) && --guard) { SD_WDT_PET(); }
         return (guard == 0) ? -1 : 0;
     }
 
     // Esperar Command Done o error de respuesta
     guard = SD_POLL_TIMEOUT;
-    while (!(SDMMC->RINTSTS & (INT_CMD_DONE | INT_RESP_ERROR_MASK)) && --guard) { }
+    while (!(SDMMC->RINTSTS & (INT_CMD_DONE | INT_RESP_ERROR_MASK)) && --guard) { SD_WDT_PET(); }
     if (guard == 0) return -1;
 
     // Timeout / CRC de respuesta = fallo (salvo que el llamante ignore CRC)
@@ -301,6 +310,22 @@ void sd_init(void) {
     (void)i;
 }
 
+void sd_use_preinit(void) {
+    /* U-Boot ya dejo la tarjeta en modo transfer; no re-inicializamos.
+     * Asumimos SDHC/SDXC (tarjetas > 2 GB usan direccion de bloque/LBA). */
+    sd_is_sdhc = 1;
+    sd_rca     = 0;
+#ifndef QEMU_TEST
+    /* U-Boot deja el controlador en modo DMA interno (los datos van al IDMAC,
+     * NO al FIFO del host). sd_read_block lee del FIFO, asi que pasamos el
+     * controlador a modo FIFO/PIO y reseteamos el FIFO. */
+    SDMMC->CTRL &= ~((1u << 25) | (1u << 5));   /* USE_INTERNAL_DMAC=0, DMA_ENABLE=0 */
+    SDMMC->CTRL |= CTRL_FIFO_RESET;
+    { uint32_t g = SD_POLL_TIMEOUT; while ((SDMMC->CTRL & CTRL_FIFO_RESET) && --g) { } }
+    SDMMC->BLKSIZ = 512;
+#endif
+}
+
 void sd_read_block(uint32_t block_number, uint32_t* buffer) {
     // En SDHC/SDXC el argumento de CMD17 es la dirección de BLOQUE (LBA).
     // En tarjetas de capacidad estándar es la dirección en BYTES.
@@ -317,7 +342,14 @@ void sd_read_block(uint32_t block_number, uint32_t* buffer) {
     uint32_t words_read = 0;
     uint32_t guard = SD_POLL_TIMEOUT;
 
+    // Esperar a que el controlador termine cualquier transferencia de datos
+    // previa (clave para lecturas consecutivas) y patear el watchdog.
+    while ((SDMMC->STATUS & STATUS_DATA_BUSY) && --guard) {
+        *(volatile uint32_t*)0xFFD0200CU = 0x76u;   // watchdog L4WD0 restart
+    }
+
     // Reset del FIFO antes de la transferencia y limpieza de flags
+    guard = SD_POLL_TIMEOUT;
     SDMMC->CTRL   |= CTRL_FIFO_RESET;
     while ((SDMMC->CTRL & CTRL_FIFO_RESET) && --guard) { }
     SDMMC->RINTSTS = 0xFFFFFFFF;

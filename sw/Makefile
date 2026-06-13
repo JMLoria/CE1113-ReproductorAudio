@@ -62,8 +62,14 @@ BARE_BIN     = sd_test_bare.bin
 BARE_LD      = startup/cyclone5_baremetal.ld
 BARE_SRCS    = startup/crt0.S bsp/hps_uart.c bsp/syscalls.c \
                sd_test_main.c SD_Driver/sd_driver.c wav_parser/wav_parser.c
+# -mno-unaligned-access: en Cortex-A9 bare-metal el chequeo de alineacion del
+# SCTLR esta activo (lo deja U-Boot), asi que un LDR/LDRH desalineado provoca
+# "data abort". Sin esta bandera, GCC -O2 colapsa las lecturas byte-a-byte de
+# fat32 (rd16/rd32) en accesos de 32/16 bits desalineados y la app crashea al
+# parsear la tabla de particiones / BPB. Con la bandera, esas lecturas quedan
+# byte-a-byte y son seguras en cualquier direccion.
 BARE_CFLAGS  = -mcpu=cortex-a9 -mfloat-abi=soft -marm -g -O2 -Wall \
-               -ffreestanding -ISD_Driver -Iwav_parser -Ibsp
+               -ffreestanding -mno-unaligned-access -ISD_Driver -Iwav_parser -Ibsp
 BARE_LDFLAGS = -nostartfiles -T $(BARE_LD)
 
 bare: $(BARE_SRCS) $(BARE_LD)

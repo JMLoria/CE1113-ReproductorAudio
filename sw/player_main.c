@@ -20,6 +20,9 @@
  * buttons_pio esta mapeado en 0xFF200000 + 0x50000 (ver soc_system.qsys). */
 #define HPS_LW_BASE     0xFF200000U
 #define BUTTONS_DATA    (*(volatile uint32_t*)(HPS_LW_BASE + 0x50000U))
+/* DEBUG: LEDs via el puente ligero (leds_pio @ 0xFF252000). Muestran la etapa
+ * del HPS y prueban de paso que el puente HPS->FPGA funciona. */
+#define HPS_LEDS        (*(volatile uint32_t*)(HPS_LW_BASE + 0x52000U))
 #define KEY_NEXT_MASK   (1U << 2)   /* KEY2 = siguiente */
 #define KEY_PREV_MASK   (1U << 3)   /* KEY3 = anterior  */
 
@@ -75,6 +78,8 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
     printf("\n=== %lu: %s (%s) ===\n", (unsigned long)track_num,
            title[0] ? title : nombre, artist);
 
+    HPS_LEDS = 0x1E;            /* DEBUG: pista escaneada, enviando al NIOS */
+
     /* Anunciar pista al NIOS: el numero de pista viaja en el payload de
      * CMD_TRACK_START para que el NIOS muestre la pista correcta. */
     audio_bridge_init(&wh, track_num);
@@ -96,6 +101,7 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
     uint32_t bloque = 0, restantes = data_size;
     while (restantes > 0) {
         wdt_pet();                     /* mantener vivo el HPS (watchdog) */
+        HPS_LEDS = 0x80 | (bloque & 0x3F);  /* DEBUG: streaming activo (bit7 + contador) */
         int b = poll_botones();
         if (b == TRK_NEXT || b == TRK_PREV) {
             audio_bridge_track_end();
@@ -120,13 +126,50 @@ static TrackResult reproducir_pista(const char* nombre, uint32_t track_num) {
 int main(void) {
     printf("\n=== REPRODUCTOR DE AUDIO (HPS BARE-METAL) ===\n");
 
+    /* Habilitar los puentes HPS<->FPGA sacandolos de reset en el Reset Manager
+     * (brgmodrst @ 0xFFD0501C, bits: 0=h2f, 1=lwh2f, 2=f2h). Sin esto, U-Boot
+     * puede dejarlos en reset y las escrituras a 0xFF200000 se PIERDEN. */
+    /* Habilitar los puentes HPS<->FPGA. Esta U-Boot (2013.01) no tiene el
+     * comando 'bridge', asi que los habilitamos a mano:
+     *   1. brgmodrst = 0  -> sacar los puentes de reset (Reset Manager).
+     *   2. L3 remap bit3 (h2f) + bit4 (lwh2f) -> exponerlos en el mapa de
+     *      direcciones. SIN esto, acceder a 0xFF200000 CUELGA al HPS. */
+    *(volatile uint32_t*)0xFFD0501CU = 0x0u;   /* puentes HPS<->FPGA fuera de reset */
+    printf("[INFO] Puentes HPS-FPGA habilitados.\n");
+
     wdt_pet();
-    sd_init();
+    HPS_LEDS = 0x02;              /* primer acceso por el puente (si cuelga aqui, fallo) */
+    sd_use_preinit();            /* U-Boot ya inicializo la SD: NO re-inicializar */
     wdt_pet();
+    HPS_LEDS = 0x06;             /* DEBUG: SD lista (preinit) */
+
+    /* DEBUG: leer el sector 0 crudo y mostrar la firma. Si la lectura SD anda,
+     * la firma del MBR debe ser 55 AA. Si sale 00 00 o basura, sd_read_block falla. */
+    sd_read_block(0, audio_block);
+    {
+        uint8_t* b = (uint8_t*)audio_block;
+        printf("[DBG] sec0 (lectura 1): %02X %02X %02X %02X | firma %02X %02X (esperado 55 AA)\n",
+               b[0], b[1], b[2], b[3], b[510], b[511]);
+    }
+
+    /* DEBUG: 2da lectura CONSECUTIVA. fat32_mount hace varias lecturas seguidas;
+     * si la 2da firma tambien sale 55 AA, las lecturas consecutivas ya funcionan. */
+    wdt_pet();
+    sd_read_block(0, audio_block);
+    {
+        uint8_t* b = (uint8_t*)audio_block;
+        printf("[DBG] sec0 (lectura 2): %02X %02X %02X %02X | firma %02X %02X (esperado 55 AA)\n",
+               b[0], b[1], b[2], b[3], b[510], b[511]);
+    }
+    wdt_pet();
+    printf("[DBG] montando FAT32...\n");
+
     if (fat32_mount() != 0) {
+        HPS_LEDS = 0x80;         /* DEBUG: fallo el montaje de la SD */
         printf("[ERROR] No se pudo montar la SD (FAT32).\n");
         return 1;
     }
+    HPS_LEDS = 0x0E;             /* DEBUG: SD montada OK */
     printf("[OK] SD montada.\n");
     fat32_list_root();
 

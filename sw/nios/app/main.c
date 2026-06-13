@@ -181,8 +181,14 @@ void procesar_streaming_audio(void) {
 				case CMD_TRACK_TEXT:  text_idx = 0; fifo_state = FIFO_TEXT; break;
 				case CMD_BLOCK_READY: pcm_left = PCM_BLOCK_WORDS; fifo_state = FIFO_PCM; break;
 				case CMD_TRACK_END:   /* fin de pista */ break;
-				case CMD_PLAY:        /* el play/pausa lo controlan los botones */ break;
-				case CMD_PAUSE:       break;
+				case CMD_PLAY:
+					/* El HPS indica que la pista debe reproducirse: arrancar.
+					 * KEY0 sigue sirviendo para pausar/reanudar. */
+					estado_actual = STATE_PLAY;
+					break;
+				case CMD_PAUSE:
+					estado_actual = STATE_PAUSE;
+					break;
 				default:              break;  /* palabra desconocida: descartar */
 			}
 			break;
@@ -255,7 +261,8 @@ void actualizar_interfaz_visual(void) {
 	REG_WRITE(HEX_DISPLAY_BASE, HEX_DATA_OFFSET, tiempo_segundos);
 
 	// Reflejar el estado de las pistas en los LEDs fisicos de la placa como apoyo visual
-	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, cancion_actual);
+	// DEBUG: silenciado para que el HPS use los LEDs como indicador de etapa.
+	// REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, cancion_actual);
 }
 
 int main(void) {
@@ -264,10 +271,17 @@ int main(void) {
 	inicializar_timer_1s();
 
 	// Encender un LED indicador en la tarjeta
-	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x01);
+	// DEBUG: silenciado para que el HPS use los LEDs como indicador de etapa.
+	// REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x01);
 
 	// Pantalla VGA: dibujar marco y etiquetas fijas (REQ-09)
 	vga_ui_init();
+
+	// Habilitar el FIFO de muestras del DSP (R_DSP) y poner el filtro en bypass.
+	// Sin el enable, las muestras PCM escritas no fluyen al serializador/codec;
+	// sin seleccionar filtro, filter_sel queda indefinido. Bypass = audio directo.
+	REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_CONTROL_OFFSET, SAMPLE_CTRL_ENABLE);
+	REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, FILTER_SEL_BYPASS);
 
 	// SUPER LOOP - MOTOR DE CONTROL DEL REPRODUCTOR
 	while(1) {

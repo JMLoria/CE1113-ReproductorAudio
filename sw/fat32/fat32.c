@@ -83,12 +83,15 @@ int fat32_mount(void) {
     s_mounted = 0;
 
     read_sector(0, s_scratch);
+    printf("[FAT] sec0 leido; firma %02X %02X; sec[0]=%02X\n",
+           sec[0x1FE], sec[0x1FF], sec[0]);
     if (rd16(sec + 0x1FE) != 0xAA55u) {
         return -1; /* sin firma de boot */
     }
 
     /* ¿El sector 0 ya es un BPB (superfloppy) o es un MBR con particiones? */
     int is_bpb = ((sec[0] == 0xEB) || (sec[0] == 0xE9)) && (rd16(sec + 0x0B) == SECTOR_SIZE);
+    printf("[FAT] is_bpb=%d\n", is_bpb);
 
     if (is_bpb) {
         vbr_lba = 0;
@@ -98,6 +101,8 @@ int fat32_mount(void) {
         for (int i = 0; i < 4; i++) {
             const uint8_t* e = sec + 0x1BE + i * 16;
             uint8_t type = e[4];
+            printf("[FAT] part%d: tipo=%02X lba=%lu\n",
+                   i, type, (unsigned long)rd32(e + 8));
             if (type == 0x0B || type == 0x0C) {
                 vbr_lba = rd32(e + 8);
                 found = 1;
@@ -106,7 +111,9 @@ int fat32_mount(void) {
         }
         if (!found) return -2;
 
+        printf("[FAT] leyendo VBR en lba=%lu...\n", (unsigned long)vbr_lba);
         read_sector(vbr_lba, s_scratch);
+        printf("[FAT] VBR leido; firma %02X %02X\n", sec[0x1FE], sec[0x1FF]);
         if (rd16(sec + 0x1FE) != 0xAA55u) return -3;
     }
 
@@ -118,6 +125,10 @@ int fat32_mount(void) {
     uint8_t  nfat  = sec[0x10];
     uint32_t fatsz = rd32(sec + 0x24);   /* FATSz32 */
     s_root_cluster = rd32(sec + 0x2C);   /* BPB_RootClus */
+
+    printf("[FAT] spc=%u rsvd=%u nfat=%u fatsz=%lu root=%lu\n",
+           s_sec_per_clus, rsvd, nfat,
+           (unsigned long)fatsz, (unsigned long)s_root_cluster);
 
     if (s_sec_per_clus == 0 || nfat == 0 || fatsz == 0) return -5;
 

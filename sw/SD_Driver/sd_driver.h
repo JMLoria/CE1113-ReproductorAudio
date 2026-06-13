@@ -17,4 +17,12 @@ void sd_init(void);
  */
 void sd_read_block(uint32_t block_number, uint32_t* buffer);
 
+/**
+ * @brief Alternativa a sd_init() cuando U-Boot YA inicializo el controlador
+ * SD/MMC (cargo la app desde la tarjeta). Evita re-ejecutar la secuencia
+ * CMD0..CMD7 (que en hardware real cuelga porque CMD0 resetea la tarjeta).
+ * Solo asume la tarjeta lista en modo transfer y de tipo SDHC/SDXC.
+ */
+void sd_use_preinit(void);
+
 #endif // SD_DRIVER_H
