@@ -2,10 +2,10 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>Jun 12, 2026 8:57:30 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1781319450791</BspGeneratedUnixTimeStamp>
-        <BspGeneratedLocation>C:\Users\jjsol\Escritorio\Documentos\TEC\IS-2026\Empotrados\Proyectos\ProyectoG2\CE1113-ReproductorAudio\sw\nios\control_app_bsp</BspGeneratedLocation>
-        <BspSettingsFile>settings.bsp</BspSettingsFile>
+        <BspGeneratedTimeStamp>Jun 13, 2026 4:13:46 AM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1781345626307</BspGeneratedUnixTimeStamp>
+        <BspGeneratedLocation>.\</BspGeneratedLocation>
+        <BspSettingsFile>..\control_app_bsp\settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\..\hw\soc_system.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>nios2</Cpu>
