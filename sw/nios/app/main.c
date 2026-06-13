@@ -60,12 +60,6 @@ static uint32_t expect_text = 0;
 // Palabras PCM ya enviadas al DSP en la pista actual. Sirve para derivar el
 // tiempo transcurrido (sincronizado al audio) sin depender del timer de HW.
 static uint32_t pcm_words_played = 0;
-// El audio es ESTEREO intercalado: cada palabra del FIFO = un frame [L:16][R:16].
-// Se escriben DOS muestras al DSP por palabra (L y luego R), una por iteracion
-// del super-loop, para que el serializador (que pide en ambos flancos de LRCLK)
-// reciba L y R. pcm_pending_r=1 indica que ya se mando L y falta R.
-static uint32_t pcm_word      = 0;
-static int      pcm_pending_r = 0;
 
 // Metadatos de la pista actual (los llena el decodificador, los usa la VGA)
 volatile uint32_t track_sample_rate  = 0;
@@ -181,7 +175,6 @@ void procesar_streaming_audio(void) {
 		if (fifo_state != FIFO_IDLE && ++empty_streak > 200000u) {
 			fifo_state    = FIFO_IDLE;
 			expect_text   = 0;
-			pcm_pending_r = 0;
 			empty_streak  = 0;
 		}
 		return;
@@ -197,7 +190,6 @@ void procesar_streaming_audio(void) {
 					cancion_actual  = CMD_PAYLOAD(word);
 					tiempo_segundos = 0; minutos = 0; segundos = 0;
 					pcm_words_played = 0;   // reiniciar el reloj de la pista
-					pcm_pending_r = 0;      // sin canal R pendiente
 					meta_idx = 0; fifo_state = FIFO_META;
 					break;
 				case CMD_TRACK_TEXT:
@@ -267,25 +259,18 @@ void procesar_streaming_audio(void) {
 		}
 
 		case FIFO_PCM: {
-			if (pcm_left == 0 && !pcm_pending_r) { fifo_state = FIFO_IDLE; return; }
+			if (pcm_left == 0) { fifo_state = FIFO_IDLE; return; }
 			if (estado_actual != STATE_PLAY) return;   // pausa: no drenar el bloque
+			if (nivel == 0) return;                     // aun no llegaron las muestras
 			uint32_t dsp = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
 			if (dsp & SAMPLE_STATUS_FIFO_FULL) return;  // sin espacio en el DSP: esperar
-
-			if (!pcm_pending_r) {
-				// Cargar el siguiente frame estereo y mandar el canal IZQUIERDO.
-				if (nivel == 0) return;                 // aun no llego el frame
-				pcm_word = REG_READ(FIFO_OUT_BASE, 0x00);
-				pcm_left--;
-				pcm_words_played++;   // un word = un frame estereo (para el reloj)
-				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, pcm_word & 0xFFFF);        // L
-				pcm_pending_r = 1;
-			} else {
-				// Mandar el canal DERECHO del frame ya cargado.
-				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, (pcm_word >> 16) & 0xFFFF); // R
-				pcm_pending_r = 0;
-				if (pcm_left == 0) fifo_state = FIFO_IDLE;
-			}
+			uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
+			// Se envia el canal IZQUIERDO de cada frame (mono). El serializador
+			// pide una muestra por frame y la reproduce en ambos canales.
+			REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, word & 0xFFFF);
+			pcm_left--;
+			pcm_words_played++;   // para el reloj de reproduccion (MM:SS)
+			if (pcm_left == 0) fifo_state = FIFO_IDLE;
 			break;
 		}
 	}

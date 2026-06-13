@@ -19,10 +19,7 @@ module AudioOutputSerializer (
 
     // ------------------------------------------------------------
     // Generacion de sample_request
-    // El stream de entrada es ESTEREO intercalado (L, R, L, R, ...), por lo que
-    // se pide UNA muestra en CADA transicion de AUD_DACLRCK (una para el canal
-    // izquierdo y otra para el derecho), no solo en el flanco de subida. Pedir
-    // solo en un flanco consumia la mitad de las muestras -> audio lento/raro.
+    // Una solicitud por frame de audio, usando AUD_DACLRCK.
     // Se genera en dominio AUD_BCLK.
     // ------------------------------------------------------------
     logic daclrck_req_d;
@@ -34,8 +31,9 @@ module AudioOutputSerializer (
         end else begin
             daclrck_req_d  <= AUD_DACLRCK;
 
-            // Pulso de 1 ciclo de BCLK en cada cambio de canal (ambos flancos)
-            sample_request <= (daclrck_req_d != AUD_DACLRCK);
+            // Pulso de 1 ciclo de BCLK cuando DACLRCK sube
+            sample_request <= (daclrck_req_d != AUD_DACLRCK) &&
+                              (AUD_DACLRCK == 1'b1);
         end
     end
 
