@@ -261,15 +261,25 @@ void procesar_streaming_audio(void) {
 		case FIFO_PCM: {
 			if (pcm_left == 0) { fifo_state = FIFO_IDLE; return; }
 			if (estado_actual != STATE_PLAY) return;   // pausa: no drenar el bloque
-			if (nivel == 0) return;                     // aun no llegaron las muestras
-			uint32_t dsp = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
-			if (dsp & SAMPLE_STATUS_FIFO_FULL) return;  // sin espacio en el DSP: esperar
-			uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
-			// Se envia el canal IZQUIERDO de cada frame (mono). El serializador
-			// pide una muestra por frame y la reproduce en ambos canales.
-			REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, word & 0xFFFF);
-			pcm_left--;
-			pcm_words_played++;   // para el reloj de reproduccion (MM:SS)
+
+			// Drenar en RAFAGA: escribir tantas muestras como se pueda en esta
+			// pasada, mientras haya datos en el FIFO IPC y lugar en el FIFO del
+			// DSP. Escribir solo UNA muestra por vuelta del super-loop no alcanza
+			// el ritmo del codec (entre vueltas hay polling de botones, division
+			// del reloj, etc.) -> underflow -> el serializador repite la ultima
+			// muestra -> audio ~4x lento. En rafaga el FIFO del DSP se mantiene
+			// lleno y el audio va a velocidad real.
+			while (pcm_left > 0
+			       && REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0
+			       && !(REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET)
+			            & SAMPLE_STATUS_FIFO_FULL)) {
+				uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
+				// Canal IZQUIERDO de cada frame (mono); el serializador lo
+				// reproduce en ambos canales.
+				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, word & 0xFFFF);
+				pcm_left--;
+				pcm_words_played++;   // para el reloj de reproduccion (MM:SS)
+			}
 			if (pcm_left == 0) fifo_state = FIFO_IDLE;
 			break;
 		}
