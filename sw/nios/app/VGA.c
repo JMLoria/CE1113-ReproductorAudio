@@ -12,9 +12,9 @@
  *   X ocupa los bits [6:0], Y los bits [12:7].
  *   Por eso el offset de fila es (y << 7).
  */
-static inline volatile uint32_t *vga_addr(int x, int y)
+static inline volatile uint8_t *vga_addr(int x, int y)
 {
-    return (volatile uint32_t *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
+    return (volatile uint8_t *)(CHAR_BUFFER_BASE + ((uint32_t)y << 7) + (uint32_t)x);
 }
 
 void vga_putchar(int x, int y, char c)
