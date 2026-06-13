@@ -72,7 +72,7 @@ int main(void) {
         // audio_bridge_init() transmite CMD_TRACK_START + metadatos al NIOS.
         // audio_bridge_play() envía CMD_PLAY para arrancar la reproducción.
         printf("\n=== INICIANDO TRANSFERENCIA A LA FPGA ===\n");
-        audio_bridge_init(&pista_actual);
+        audio_bridge_init(&pista_actual, 1);
         audio_bridge_play();
 
         // 5. Calcular cuántos bloques de datos de audio debemos procesar

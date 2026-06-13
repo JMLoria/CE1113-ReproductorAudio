@@ -63,4 +63,43 @@ WavStatus wav_parse_header(const uint8_t* buffer, WavHeader* out_header);
  */
 void wav_print_info(const WavHeader* header);
 
+/* Longitud recomendada (con '\0' incluido) para los campos de metadatos. */
+#define WAV_INFO_MAX 48
+
+/**
+ * @brief Extrae titulo (INAM) y artista (IART) de un chunk LIST/INFO que este
+ * presente dentro de los primeros 'len' bytes de 'buf'. Si no hay metadatos,
+ * deja los strings vacios. Opera solo sobre el buffer (sin acceso a archivo).
+ * @param buf     Prefijo del archivo WAV (idealmente cabecera + chunk LIST).
+ * @param len     Cantidad de bytes validos en 'buf'.
+ * @param title   Buffer de salida para el titulo (al menos 'maxlen' bytes).
+ * @param artist  Buffer de salida para el artista (al menos 'maxlen' bytes).
+ * @param maxlen  Tamano de cada buffer de salida (incluye el '\0').
+ * @return Cantidad de campos encontrados (0..2).
+ */
+int wav_parse_info(const uint8_t* buf, uint32_t len,
+                   char* title, char* artist, uint32_t maxlen);
+
+/**
+ * @brief Escanea la cabecera RIFF tolerando chunks intermedios (p.ej. un
+ * LIST/INFO antes de "data", como genera ffmpeg). Encuentra el formato, el
+ * offset y tamano reales del audio, y extrae titulo/artista si hay LIST/INFO.
+ *
+ * A diferencia de wav_parse_header (que asume el layout canonico con "data"
+ * en el offset 36), esto funciona aunque "data" este mas adelante.
+ *
+ * @param buf          Prefijo del archivo (debe llegar al menos hasta "data").
+ * @param len          Bytes validos en 'buf'.
+ * @param out          Header con el formato (sample_rate, canales, bits, etc.).
+ * @param data_offset  [out] offset en bytes donde empieza el audio PCM.
+ * @param data_size    [out] cantidad de bytes de audio PCM.
+ * @param title        [out] titulo (INAM) o cadena vacia.
+ * @param artist       [out] artista (IART) o cadena vacia.
+ * @param txtmax       Tamano de los buffers title/artist.
+ * @return WAV_OK si encontro fmt + data PCM; un codigo de error si no.
+ */
+WavStatus wav_scan(const uint8_t* buf, uint32_t len, WavHeader* out,
+                   uint32_t* data_offset, uint32_t* data_size,
+                   char* title, char* artist, uint32_t txtmax);
+
 #endif /* WAV_PARSER_H */

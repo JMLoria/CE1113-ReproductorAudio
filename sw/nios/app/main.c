@@ -3,6 +3,8 @@
  */
 
 #include "memory_map.h"
+#include "ipc_protocol.h"
+#include "vga_ui.h"
 
 // Lee el registro de control interno de la CPU (reg_num)
 #define NIOS2_READ_CTL_REG(reg_num) __builtin_rdctl(reg_num)
@@ -42,6 +44,33 @@ volatile uint32_t segundos = 0;
 
 // Variable global para almacenar el "tiempo del ultimo boton presionado"
 volatile uint32_t tiempo_ultimo_click = 0;
+
+// ===== Decodificador del protocolo IPC (FIFO HPS -> NIOS) =====
+typedef enum { FIFO_IDLE, FIFO_META, FIFO_TEXT, FIFO_PCM } FifoState_t;
+volatile FifoState_t fifo_state = FIFO_IDLE;
+
+static uint32_t meta_buf[TRACK_META_WORDS];
+static uint32_t meta_idx = 0;
+static uint32_t text_buf[TRACK_TEXT_WORDS];
+static uint32_t text_idx = 0;
+static uint32_t pcm_left = 0;
+// Solo se acepta un paquete de texto inmediatamente despues de un META valido.
+// Evita que un falso match (datos PCM con byte alto 0xF0) escriba basura.
+static uint32_t expect_text = 0;
+// Palabras PCM ya enviadas al DSP en la pista actual. Sirve para derivar el
+// tiempo transcurrido (sincronizado al audio) sin depender del timer de HW.
+static uint32_t pcm_words_played = 0;
+
+// Metadatos de la pista actual (los llena el decodificador, los usa la VGA)
+volatile uint32_t track_sample_rate  = 0;
+volatile uint32_t track_channels     = 0;
+volatile uint32_t track_bits         = 0;
+volatile uint32_t track_total_bytes  = 0;
+volatile uint32_t track_duration_sec = 0;
+volatile uint32_t track_meta_valid   = 0;
+char track_title[TRACK_TEXT_FIELD_BYTES];
+char track_artist[TRACK_TEXT_FIELD_BYTES];
+volatile uint32_t nueva_pista_ui = 0;   // 1 = llego pista nueva, refrescar VGA
 
 // Esta sera nuestra funcion ISR dedicada a los botones fisicos
 void boton_isr(void) {
@@ -96,22 +125,15 @@ void handle_exception(void) {
 }
 
 void inicializar_interrupciones_botones(void) {
-	// 1. Limpiar cualquier captura de flanco residual previa en el periferico
+	// MODO POLLING: el super-loop sondea el registro de captura de flanco del
+	// PIO. NO se habilitan interrupciones de CPU (bit PIE): el handler de
+	// excepciones de este proyecto es una funcion C sin guardado/restauracion
+	// de contexto ni 'eret', y colgaba/reiniciaba el Nios al primer flanco de
+	// boton (borraba la VGA). El sondeo cumple la misma funcion de forma segura.
+	//
+	// Solo limpiamos cualquier flanco residual; la captura de flanco la hace el
+	// hardware del PIO de forma continua, independiente del bit PIE.
 	REG_WRITE(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET, 0xF);
-
-	// 2. Continuar la mascara del periferico PIO para escuchar los 4 botones (KEY0 a KEY3)
-	REG_WRITE(BUTTONS_PIO_BASE, PIO_IRQMASK_OFFSET, 0xF);
-
-	// 3. Configurar la CPU Nios II: Activar la linea IRQ 3 en el registro ineable
-	uint32_t ienable_actual = NIOS2_READ_CTL_REG(NIOS2_CTL_IENABLE);
-	ienable_actual |= (1 << IRQ_BUTTONS);
-	NIOS2_WRITE_CTL_REG(NIOS2_CTL_IENABLE, ienable_actual);
-
-	// 4. Habilitar Interrupciones Globales en la CPU
-	// (Poner a '1' el bit PIE en el registro status)
-	uint32_t status_actual = NIOS2_READ_CTL_REG(NIOS2_CTL_STATUS);
-	status_actual |= NIOS2_STATUS_PIE_MASK;
-	NIOS2_WRITE_CTL_REG(NIOS2_CTL_STATUS, status_actual);
 }
 
 void inicializar_timer_1s(void) {
@@ -137,24 +159,129 @@ void inicializar_timer_1s(void) {
 	NIOS2_WRITE_CTL_REG(NIOS2_CTL_IENABLE, ienable_actual);
 }
 
-// Lee una muestra de la FIFO IPC y la transfiere a la IP de entrada de audio
-void procesar_streaming_audio(void) {	
-	// 1. el streaming de datos fisicos solo oecurre si el reproductor esta en PLAY
-	if (estado_actual == STATE_PLAY) {
-		// 2. Verificar si la FIFO de comunicacion tiene muestrar disponibles 
-		uint32_t muestras_disponibles = REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG);
+// Decodifica el FIFO IPC: distingue comandos/metadatos de las muestras PCM.
+// Solo las muestras PCM van a la IP de audio; los comandos y metadatos se
+// interpretan (y los strings se guardan para la VGA). Se llama una vez por
+// iteracion del super loop (procesa una palabra o una muestra por llamada).
+void procesar_streaming_audio(void) {
+	static uint32_t empty_streak = 0;
+	uint32_t nivel = REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG);
 
-		if (muestras_disponibles > 0) {
-			// 3. Verificar si el FIFO de entrada de audio tiene espacio
-			uint32_t dsp_status = REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET);
+	// Resincronizacion: si el FIFO lleva mucho tiempo vacio, el HPS esta entre
+	// streams (reseteado o pausa larga). Volver a IDLE para alinear con el
+	// proximo CMD_TRACK_START. Durante el streaming normal el HPS mantiene el
+	// FIFO lleno, asi que un vacio sostenido es un limite de trama seguro.
+	if (nivel == 0) {
+		if (fifo_state != FIFO_IDLE && ++empty_streak > 200000u) {
+			fifo_state    = FIFO_IDLE;
+			expect_text   = 0;
+			empty_streak  = 0;
+		}
+		return;
+	}
+	empty_streak = 0;
 
-			if (!(dsp_status & SAMPLE_STATUS_FIFO_FULL)) {
-				// 4. LEER: Extraer la muestra de 32 bits de la FIFO IPC
-				uint32_t muestra_ipc = REG_READ(FIFO_OUT_BASE, 0x00);
-
-				// 5. ESCRIBIR: Enviar los 16 bits bajos a la IP de audio
-				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, muestra_ipc & 0xFFFF);
+	switch (fifo_state) {
+		case FIFO_IDLE: {
+			uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
+			switch (word & CMD_OPCODE_MASK) {
+				case CMD_TRACK_START:
+					// El HPS manda el numero de pista en el payload; reiniciar tiempo.
+					cancion_actual  = CMD_PAYLOAD(word);
+					tiempo_segundos = 0; minutos = 0; segundos = 0;
+					pcm_words_played = 0;   // reiniciar el reloj de la pista
+					meta_idx = 0; fifo_state = FIFO_META;
+					break;
+				case CMD_TRACK_TEXT:
+					/* Aceptar el texto SOLO si viene justo despues de un META
+					 * valido; asi un falso match desde datos PCM (cuando el
+					 * stream se desincroniza) no escribe basura en la VGA. */
+					if (expect_text) { text_idx = 0; fifo_state = FIFO_TEXT; }
+					break;
+				case CMD_BLOCK_READY: pcm_left = PCM_BLOCK_WORDS; fifo_state = FIFO_PCM; break;
+				case CMD_TRACK_END:   /* fin de pista */ break;
+				case CMD_PLAY:
+					/* El HPS indica que la pista debe reproducirse: arrancar.
+					 * KEY0 sigue sirviendo para pausar/reanudar. */
+					estado_actual = STATE_PLAY;
+					break;
+				case CMD_PAUSE:
+					estado_actual = STATE_PAUSE;
+					break;
+				default:              break;  /* palabra desconocida: descartar */
 			}
+			break;
+		}
+
+		case FIFO_META: {
+			if (nivel == 0) return;
+			meta_buf[meta_idx++] = REG_READ(FIFO_OUT_BASE, 0x00);
+			if (meta_idx >= TRACK_META_WORDS) {
+				if (meta_buf[0] == TRACK_META_MAGIC) {
+					track_sample_rate = meta_buf[1];
+					track_channels    = (meta_buf[2] >> 16) & 0xFFFF;
+					track_bits        =  meta_buf[2] & 0xFFFF;
+					track_total_bytes =  meta_buf[3];
+					uint32_t br = track_sample_rate * track_channels * (track_bits / 8);
+					track_duration_sec = br ? (track_total_bytes / br) : 0;
+					track_meta_valid = 1;
+					expect_text = 1;   // el texto valido viene justo despues
+				}
+				fifo_state = FIFO_IDLE;
+			}
+			break;
+		}
+
+		case FIFO_TEXT: {
+			if (nivel == 0) return;
+			text_buf[text_idx++] = REG_READ(FIFO_OUT_BASE, 0x00);
+			if (text_idx >= TRACK_TEXT_WORDS) {
+				int i;
+				for (i = 0; i < TRACK_TEXT_FIELD_WORDS; i++) {
+					uint32_t w = text_buf[i];
+					track_title[i*4+0] = (char)( w        & 0xFF);
+					track_title[i*4+1] = (char)((w >> 8)  & 0xFF);
+					track_title[i*4+2] = (char)((w >> 16) & 0xFF);
+					track_title[i*4+3] = (char)((w >> 24) & 0xFF);
+					uint32_t a = text_buf[TRACK_TEXT_FIELD_WORDS + i];
+					track_artist[i*4+0] = (char)( a        & 0xFF);
+					track_artist[i*4+1] = (char)((a >> 8)  & 0xFF);
+					track_artist[i*4+2] = (char)((a >> 16) & 0xFF);
+					track_artist[i*4+3] = (char)((a >> 24) & 0xFF);
+				}
+				track_title[TRACK_TEXT_FIELD_BYTES - 1]  = '\0';
+				track_artist[TRACK_TEXT_FIELD_BYTES - 1] = '\0';
+				nueva_pista_ui = 1;   // metadatos completos: avisar al super loop
+				expect_text = 0;      // ya consumido: no aceptar mas texto
+				fifo_state = FIFO_IDLE;
+			}
+			break;
+		}
+
+		case FIFO_PCM: {
+			if (pcm_left == 0) { fifo_state = FIFO_IDLE; return; }
+			if (estado_actual != STATE_PLAY) return;   // pausa: no drenar el bloque
+
+			// Drenar en RAFAGA: escribir tantas muestras como se pueda en esta
+			// pasada, mientras haya datos en el FIFO IPC y lugar en el FIFO del
+			// DSP. Escribir solo UNA muestra por vuelta del super-loop no alcanza
+			// el ritmo del codec (entre vueltas hay polling de botones, division
+			// del reloj, etc.) -> underflow -> el serializador repite la ultima
+			// muestra -> audio ~4x lento. En rafaga el FIFO del DSP se mantiene
+			// lleno y el audio va a velocidad real.
+			while (pcm_left > 0
+			       && REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0
+			       && !(REG_READ(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_STATUS_OFFSET)
+			            & SAMPLE_STATUS_FIFO_FULL)) {
+				uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
+				// Canal IZQUIERDO de cada frame (mono); el serializador lo
+				// reproduce en ambos canales.
+				REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_WRITE_OFFSET, word & 0xFFFF);
+				pcm_left--;
+				pcm_words_played++;   // para el reloj de reproduccion (MM:SS)
+			}
+			if (pcm_left == 0) fifo_state = FIFO_IDLE;
+			break;
 		}
 	}
 }
@@ -168,7 +295,8 @@ void actualizar_interfaz_visual(void) {
 	REG_WRITE(HEX_DISPLAY_BASE, HEX_DATA_OFFSET, tiempo_segundos);
 
 	// Reflejar el estado de las pistas en los LEDs fisicos de la placa como apoyo visual
-	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, cancion_actual);
+	// DEBUG: silenciado para que el HPS use los LEDs como indicador de etapa.
+	// REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, cancion_actual);
 }
 
 int main(void) {
@@ -177,11 +305,62 @@ int main(void) {
 	inicializar_timer_1s();
 
 	// Encender un LED indicador en la tarjeta
-	REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x01);
+	// DEBUG: silenciado para que el HPS use los LEDs como indicador de etapa.
+	// REG_WRITE(LEDS_PIO_BASE, PIO_DATA_OFFSET, 0x01);
+
+	// Pantalla VGA: dibujar marco y etiquetas fijas (REQ-09)
+	vga_ui_init();
+
+	// Habilitar el FIFO de muestras del DSP (R_DSP) y poner el filtro en bypass.
+	// Sin el enable, las muestras PCM escritas no fluyen al serializador/codec;
+	// sin seleccionar filtro, filter_sel queda indefinido. Bypass = audio directo.
+	REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_CONTROL_OFFSET, SAMPLE_CTRL_ENABLE);
+	REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, FILTER_SEL_BYPASS);
+
+	// Vaciar datos viejos del FIFO IPC (p.ej. de una corrida anterior del Nios)
+	// para que el decodificador arranque alineado con el stream del HPS.
+	while (REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0) {
+		(void)REG_READ(FIFO_OUT_BASE, 0x00);
+	}
+	fifo_state = FIFO_IDLE;
+	expect_text = 0;
 
 	// SUPER LOOP - MOTOR DE CONTROL DEL REPRODUCTOR
 	while(1) {
-		// 1. GESTION DE BOTONES (Rutinas de control por interrupcion)
+		// 0. SONDEO de botones: el PIO captura el flanco de bajada por hardware
+		//    (registro edge-capture), lo leemos aqui sin interrupciones.
+		uint32_t ec = REG_READ(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET) & 0xF;
+		if (ec) {
+			REG_WRITE(BUTTONS_PIO_BASE, PIO_EDGECAP_OFFSET, ec);  // limpiar flancos
+			boton_detectado = ec;
+			bandera_boton_presionado = 1;
+		}
+
+		// 0b. TIEMPO transcurrido derivado de las muestras YA reproducidas
+		//     (sincronizado al audio). El timer de hardware no daba timeout, asi
+		//     que el reloj se calcula como bytes_reproducidos / byterate.
+		//     Avanza solo mientras hay drenado (PLAY) y se congela en pausa/stop.
+		{
+			uint32_t byterate = track_sample_rate * track_channels * (track_bits / 8);
+			uint32_t t = byterate ? ((pcm_words_played * 4u) / byterate) : 0;
+			if (t != tiempo_segundos) {
+				tiempo_segundos = t;
+				segundos = t % 60;
+				minutos  = t / 60;
+				bandera_timer_un_segundo = 1;
+			}
+		}
+
+		// 0c. SELECCION DE FILTRO segun los switches SW[1:0] (R_DSP):
+		//     0=bypass, 1=lowpass, 2=highpass, 3=bassboost.
+		//     Ademas sirve de DIAGNOSTICO del silencio: si con algun filtro
+		//     (p.ej. SW0=1, lowpass) SI se escucha pero con bypass no, el bug
+		//     esta en el case(filter_sel) de AudioFilter.sv. Si NINGUN filtro
+		//     suena, el problema es la config del codec WM8731 (Auto Initialize).
+		REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET,
+		          REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET) & 0x3u);
+
+		// 1. GESTION DE BOTONES (por sondeo)
 		if (bandera_boton_presionado) {
 			// Consumir bandera de evento
 			bandera_boton_presionado = 0;
@@ -205,45 +384,12 @@ int main(void) {
 				actualizar_interfaz_visual();
 			}
 
-			// BOTON 2 (KEY2): Siguiente Cancion
-			if (boton_detectado & (1 << 2)) {
-				// Paso de seguridad, cambiar momentaneamente a STOP
-				estado_actual = STATE_STOP;
-				actualizar_interfaz_visual();
-
-				tiempo_segundos = 0;
-				minutos = 0;
-				segundos = 0;
-				cancion_actual++;
-				if (cancion_actual > TOTAL_CANCIONES) {
-					// Volver a la primera pista
-					cancion_actual = 1;
-				}
-
-				// Volver a paner en PLAY en la nueva pista
-				estado_actual = STATE_PLAY;
-				actualizar_interfaz_visual();
-			}
-
-			// BOTON3 (KEY3): Cancion Anterior
-			if (boton_detectado & (1 << 3)) {
-				// Paso de seguridad, cambiar momentaneamente a STOP
-				estado_actual = STATE_STOP;
-				actualizar_interfaz_visual();
-
-				tiempo_segundos = 0;
-				minutos = 0;
-				segundos = 0;
-				cancion_actual--;
-				if (cancion_actual < 1) {
-					// Ir a la ultima pista
-					cancion_actual = TOTAL_CANCIONES;
-				}
-
-				// Volver a paner en PLAY en la nueva pista
-				estado_actual = STATE_PLAY;
-				actualizar_interfaz_visual();
-			}
+			// BOTON 2 (KEY2) y BOTON 3 (KEY3): Siguiente / Anterior.
+			// El HPS es el DUEÑO de la navegacion de pistas: lee KEY2/KEY3 por
+			// el puente ligero y cambia la cancion que streamea. El NIOS NO debe
+			// cambiarla por su cuenta (provocaria conflicto/desfase); solo refleja
+			// la pista que el HPS le indica via CMD_TRACK_START. Por eso aqui se
+			// ignoran KEY2/KEY3 (igual se limpio su flanco arriba).
 
 			boton_detectado = 0; // Restablecer el registro de captura procesado
 		}
@@ -255,23 +401,33 @@ int main(void) {
 			// Actualizar los displays de 7-segmentos con el nuevo tiempo de reproduccion
 			actualizar_interfaz_visual();
 
-			// Monitoreo de finalizcion de pista para reproduccion continua
-			// Se debe proporcionar una bandera o una variable que indique el final
-			if (tiempo_segundos >= 180) {
-				tiempo_segundos = 0;
-				minutos = 0;
-				segundos = 0;
-				cancion_actual = (cancion_actual % TOTAL_CANCIONES) + 1;
-				actualizar_interfaz_visual();
-			}
+			// Refrescar el tiempo transcurrido en la VGA (MM:SS)
+			vga_ui_set_elapsed(tiempo_segundos);
+
+			// El avance de pista lo decide el HPS (al terminar la cancion o por
+			// los botones Siguiente/Anterior). El NIOS solo refleja la pista que
+			// el HPS le indica via CMD_TRACK_START, sin auto-avanzar.
+		}
+
+		// Refrescar la VGA cuando llega una pista nueva (titulo/artista/duracion)
+		if (nueva_pista_ui) {
+			nueva_pista_ui = 0;
+			TrackInfo ti;
+			int k;
+			for (k = 0; k < UI_TEXT_MAX - 1 && track_title[k];  k++) ti.title[k]  = track_title[k];
+			ti.title[k] = '\0';
+			for (k = 0; k < UI_TEXT_MAX - 1 && track_artist[k]; k++) ti.artist[k] = track_artist[k];
+			ti.artist[k] = '\0';
+			ti.duration_sec = track_duration_sec;
+			vga_ui_set_track(&ti);
 		}
 
 		procesar_streaming_audio();
 	}
 
 	return 0;
-  
-  
+}
+
 //  /* main.c  -  Prueba "hello world" del driver VGA (REQ-09)
 //  *
 //  * Objetivo: confirmar que la cadena NIOS -> char_buffer ->

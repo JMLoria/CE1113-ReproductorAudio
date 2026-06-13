@@ -101,7 +101,7 @@ ACDS_VERSION := 18.1
 # BUILD_NUMBER: 625
 
 SETTINGS_FILE := settings.bsp
-SOPC_FILE := C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
+SOPC_FILE := ../../../hw/soc_system.sopcinfo
 
 #-------------------------------------------------------------------------------
 #                             TOOL & COMMAND DEFINITIONS

@@ -2,9 +2,9 @@
  * alt_sys_init.c - HAL initialization source
  *
  * Machine generated for CPU 'nios2' in SOPC Builder design 'soc_system'
- * SOPC Builder design path: C:/TEC/CE1113-SistemasEmpotrados/CE1113-ReproductorAudio/hw/soc_system.sopcinfo
+ * SOPC Builder design path: ../../../hw/soc_system.sopcinfo
  *
- * Generated: Wed Jun 10 19:25:49 CST 2026
+ * Generated: Thu Jun 11 22:00:43 CST 2026
  */
 
 /*
