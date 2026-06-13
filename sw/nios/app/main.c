@@ -54,6 +54,9 @@ static uint32_t meta_idx = 0;
 static uint32_t text_buf[TRACK_TEXT_WORDS];
 static uint32_t text_idx = 0;
 static uint32_t pcm_left = 0;
+// Solo se acepta un paquete de texto inmediatamente despues de un META valido.
+// Evita que un falso match (datos PCM con byte alto 0xF0) escriba basura.
+static uint32_t expect_text = 0;
 
 // Metadatos de la pista actual (los llena el decodificador, los usa la VGA)
 volatile uint32_t track_sample_rate  = 0;
@@ -165,11 +168,25 @@ void inicializar_timer_1s(void) {
 // interpretan (y los strings se guardan para la VGA). Se llama una vez por
 // iteracion del super loop (procesa una palabra o una muestra por llamada).
 void procesar_streaming_audio(void) {
+	static uint32_t empty_streak = 0;
 	uint32_t nivel = REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG);
+
+	// Resincronizacion: si el FIFO lleva mucho tiempo vacio, el HPS esta entre
+	// streams (reseteado o pausa larga). Volver a IDLE para alinear con el
+	// proximo CMD_TRACK_START. Durante el streaming normal el HPS mantiene el
+	// FIFO lleno, asi que un vacio sostenido es un limite de trama seguro.
+	if (nivel == 0) {
+		if (fifo_state != FIFO_IDLE && ++empty_streak > 200000u) {
+			fifo_state  = FIFO_IDLE;
+			expect_text = 0;
+			empty_streak = 0;
+		}
+		return;
+	}
+	empty_streak = 0;
 
 	switch (fifo_state) {
 		case FIFO_IDLE: {
-			if (nivel == 0) return;
 			uint32_t word = REG_READ(FIFO_OUT_BASE, 0x00);
 			switch (word & CMD_OPCODE_MASK) {
 				case CMD_TRACK_START:
@@ -178,7 +195,12 @@ void procesar_streaming_audio(void) {
 					tiempo_segundos = 0; minutos = 0; segundos = 0;
 					meta_idx = 0; fifo_state = FIFO_META;
 					break;
-				case CMD_TRACK_TEXT:  text_idx = 0; fifo_state = FIFO_TEXT; break;
+				case CMD_TRACK_TEXT:
+					/* Aceptar el texto SOLO si viene justo despues de un META
+					 * valido; asi un falso match desde datos PCM (cuando el
+					 * stream se desincroniza) no escribe basura en la VGA. */
+					if (expect_text) { text_idx = 0; fifo_state = FIFO_TEXT; }
+					break;
 				case CMD_BLOCK_READY: pcm_left = PCM_BLOCK_WORDS; fifo_state = FIFO_PCM; break;
 				case CMD_TRACK_END:   /* fin de pista */ break;
 				case CMD_PLAY:
@@ -206,6 +228,7 @@ void procesar_streaming_audio(void) {
 					uint32_t br = track_sample_rate * track_channels * (track_bits / 8);
 					track_duration_sec = br ? (track_total_bytes / br) : 0;
 					track_meta_valid = 1;
+					expect_text = 1;   // el texto valido viene justo despues
 				}
 				fifo_state = FIFO_IDLE;
 			}
@@ -232,6 +255,7 @@ void procesar_streaming_audio(void) {
 				track_title[TRACK_TEXT_FIELD_BYTES - 1]  = '\0';
 				track_artist[TRACK_TEXT_FIELD_BYTES - 1] = '\0';
 				nueva_pista_ui = 1;   // metadatos completos: avisar al super loop
+				expect_text = 0;      // ya consumido: no aceptar mas texto
 				fifo_state = FIFO_IDLE;
 			}
 			break;
@@ -282,6 +306,14 @@ int main(void) {
 	// sin seleccionar filtro, filter_sel queda indefinido. Bypass = audio directo.
 	REG_WRITE(AUDIO_SAMPLE_INPUT_BASE, SAMPLE_CONTROL_OFFSET, SAMPLE_CTRL_ENABLE);
 	REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET, FILTER_SEL_BYPASS);
+
+	// Vaciar datos viejos del FIFO IPC (p.ej. de una corrida anterior del Nios)
+	// para que el decodificador arranque alineado con el stream del HPS.
+	while (REG_READ(FIFO_OUT_CSR_BASE, FIFO_LEVEL_REG) > 0) {
+		(void)REG_READ(FIFO_OUT_BASE, 0x00);
+	}
+	fifo_state = FIFO_IDLE;
+	expect_text = 0;
 
 	// SUPER LOOP - MOTOR DE CONTROL DEL REPRODUCTOR
 	while(1) {
