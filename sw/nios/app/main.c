@@ -339,6 +339,15 @@ int main(void) {
 			}
 		}
 
+		// 0c. SELECCION DE FILTRO segun los switches SW[1:0] (R_DSP):
+		//     0=bypass, 1=lowpass, 2=highpass, 3=bassboost.
+		//     Ademas sirve de DIAGNOSTICO del silencio: si con algun filtro
+		//     (p.ej. SW0=1, lowpass) SI se escucha pero con bypass no, el bug
+		//     esta en el case(filter_sel) de AudioFilter.sv. Si NINGUN filtro
+		//     suena, el problema es la config del codec WM8731 (Auto Initialize).
+		REG_WRITE(AUDIO_FILTER_CONTROL_BASE, FILTER_CONTROL_OFFSET,
+		          REG_READ(SWITCHES_PIO_BASE, PIO_DATA_OFFSET) & 0x3u);
+
 		// 1. GESTION DE BOTONES (por sondeo)
 		if (bandera_boton_presionado) {
 			// Consumir bandera de evento
