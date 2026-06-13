@@ -146,10 +146,8 @@ static int      sd_is_sdhc = 0;   /* 1 si la tarjeta es de alta capacidad (SDHC/
 static uint32_t sd_rca     = 0;   /* Relative Card Address asignada por la tarjeta     */
 
 /* -------------------------------------------------------------------------
- * Aplica los registros de reloj (CLKDIV/CLKENA/CLKSRC). En el controlador DW
- * los cambios de reloj NO surten efecto hasta enviar un comando especial con
- * el bit UPD_CLK activo (no se envía nada por el bus, solo se sincroniza la
- * CIU). No genera "Command Done", por eso se espera a que se limpie START.
+ * Envía el comando de actualización de reloj (CMD52 con bit UPD_CLK) y espera
+ * a que se complete. 
  * ------------------------------------------------------------------------- */
 static void sd_update_clocks(void) {
 #ifndef QEMU_TEST
@@ -208,7 +206,7 @@ static int sd_send_cmd(uint32_t index, uint32_t arg, uint32_t flags) {
     while ((SDMMC->CMD & CMD_START) && --guard) { SD_WDT_PET(); }
     if (guard == 0) return -1;
 
-    // Si no se espera respuesta, terminamos aquí
+    // Si no se espera respuesta, se termina aqui 
     if (!(flags & CMD_RESP_EXP)) {
         guard = SD_POLL_TIMEOUT;
         while (!(SDMMC->RINTSTS & INT_CMD_DONE) && --guard) { SD_WDT_PET(); }
@@ -311,13 +309,12 @@ void sd_init(void) {
 }
 
 void sd_use_preinit(void) {
-    /* U-Boot ya dejo la tarjeta en modo transfer; no re-inicializamos.
-     * Asumimos SDHC/SDXC (tarjetas > 2 GB usan direccion de bloque/LBA). */
+    /*Asumimos SDHC/SDXC (tarjetas > 2 GB usan direccion de bloque/LBA). */
     sd_is_sdhc = 1;
     sd_rca     = 0;
 #ifndef QEMU_TEST
     /* U-Boot deja el controlador en modo DMA interno (los datos van al IDMAC,
-     * NO al FIFO del host). sd_read_block lee del FIFO, asi que pasamos el
+     * NO al FIFO del host). sd_read_block lee del FIFO, se pasa el
      * controlador a modo FIFO/PIO y reseteamos el FIFO. */
     SDMMC->CTRL &= ~((1u << 25) | (1u << 5));   /* USE_INTERNAL_DMAC=0, DMA_ENABLE=0 */
     SDMMC->CTRL |= CTRL_FIFO_RESET;
@@ -342,8 +339,8 @@ void sd_read_block(uint32_t block_number, uint32_t* buffer) {
     uint32_t words_read = 0;
     uint32_t guard = SD_POLL_TIMEOUT;
 
-    // Esperar a que el controlador termine cualquier transferencia de datos
-    // previa (clave para lecturas consecutivas) y patear el watchdog.
+    // Se espera a que el controlador termine cualquier transferencia de datos
+    // previa y patear el watchdog.
     while ((SDMMC->STATUS & STATUS_DATA_BUSY) && --guard) {
         *(volatile uint32_t*)0xFFD0200CU = 0x76u;   // watchdog L4WD0 restart
     }
